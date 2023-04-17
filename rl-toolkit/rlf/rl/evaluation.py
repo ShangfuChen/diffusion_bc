@@ -11,7 +11,9 @@ from rlf.policies.base_policy import get_empty_step_info
 from rlf.rl import utils
 from rlf.rl.envs import get_vec_normalize, make_vec_envs
 from tqdm import tqdm
-
+from rlf.algos import (GAIL, PPO, BaseAlgo, BehavioralCloning, Diff_il,
+                       BehavioralCloningFromObs, BehavioralCloningPretrain,
+                       GailDiscrim)
 
 def eval_print(
     env_interface,
@@ -26,7 +28,7 @@ def eval_print(
 ):
     print("Evaluating " + mode)
     args.evaluation_mode = True
-    eval_info, eval_envs = evaluate(
+    eval_info, eval_envs, goal_achieved = evaluate(
         args,
         alg_env_settings,
         policy,
@@ -44,7 +46,7 @@ def eval_print(
         total_num_steps,
     )
     args.evaluation_mode = False
-    return eval_envs
+    return eval_envs, goal_achieved
 
 
 def train_eval(
@@ -60,7 +62,7 @@ def train_eval(
 
     vec_norm = get_vec_normalize(envs)
 
-    train_eval_envs = eval_print(
+    train_eval_envs, goal_achieved = eval_print(
         env_interface,
         args,
         alg_env_settings,
@@ -72,7 +74,7 @@ def train_eval(
         log,
     )
 
-    return train_eval_envs
+    return train_eval_envs, goal_achieved
 
 
 def full_eval(
@@ -87,7 +89,7 @@ def full_eval(
     vec_norm,
 ):
     args.evaluation_mode = True
-    ret_info, envs = evaluate(
+    ret_info, envs, goal_achieved = evaluate(
         args,
         alg_env_settings,
         policy,
@@ -102,7 +104,7 @@ def full_eval(
     args.evaluation_mode = False
     envs.close()
 
-    return ret_info
+    return ret_info, goal_achieved
 
 
 def evaluate(
@@ -172,7 +174,7 @@ def evaluate(
         )
 
     total_num_eval = num_processes * args.num_eval
-
+    
     # Measure the number of episodes completed
     pbar = tqdm(total=total_num_eval)
     evaluated_episode_count = 0
@@ -202,7 +204,12 @@ def evaluate(
                 evaluated_episode_count,
             )
         )
-
+    
+    is_succ = False
+    goal_achieved = []
+    num_steps = 0
+    flag = 0
+    count_flag = False
     while evaluated_episode_count < total_num_eval:
         step_info = get_empty_step_info()
         with torch.no_grad():
@@ -227,7 +234,8 @@ def evaluate(
             )
         else:
             finished_count = sum([int(d) for d in done])
-
+            #finished_count = int(infos[0]["goal_achieved"])
+        
         pbar.update(finished_count)
         evaluated_episode_count += finished_count
 
@@ -245,7 +253,7 @@ def evaluate(
         if args.render_succ_fails:
             should_render = n_succs < args.num_render or n_fails < args.num_render
 
-        if should_render:
+        if should_render and flag>=0:
             frames.extend(
                 get_render_frames(
                     eval_envs,
@@ -262,8 +270,27 @@ def evaluate(
         obs = next_obs
 
         step_log_vals = utils.agg_ep_log_stats(infos, ac_info.extra)
+        
         for k, v in step_log_vals.items():
             ep_stats[k].extend(v)
+        
+        if count_flag:
+            flag  = flag - 1
+        
+        if is_succ == False:
+            is_succ = infos[0]["goal_achieved"]
+            if is_succ:
+                flag = 2
+                count_flag = True
+        
+        if finished_count == 1:
+            #is_succ = step_log_vals["ep_found_goal"][0]
+            goal_achieved.append(is_succ)
+            save_frames(frames, 'each', evaluated_episode_count, args)
+            frames = []
+            is_succ = False
+            flag = 0
+            count_flag = False
 
         if "ep_success" in step_log_vals and args.render_succ_fails:
             is_succ = step_log_vals["ep_success"][0]
@@ -275,7 +302,6 @@ def evaluate(
                 if n_fails < args.num_render:
                     fail_frames.extend(frames)
                 n_fails += 1
-            frames = []
 
     pbar.close()
     info = {}
@@ -288,6 +314,9 @@ def evaluate(
     for k, v in ep_stats.items():
         print(" - %s: %.5f" % (k, np.mean(v)))
         ret_info[k] = np.mean(v)
+    
+    succ_rate = np.sum(goal_achieved) / args.num_eval
+    ret_info['Goal_Completion'] = succ_rate
 
     if args.render_succ_fails:
         # Render the success and failures to two separate files.
@@ -301,7 +330,7 @@ def evaluate(
     # Switch policy back to train mode
     policy.train()
 
-    return ret_info, eval_envs
+    return ret_info, eval_envs, goal_achieved
 
 
 def save_frames(frames, mode, num_steps, args):

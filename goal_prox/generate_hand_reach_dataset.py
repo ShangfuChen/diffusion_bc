@@ -7,7 +7,6 @@ import argparse
 import os.path as osp
 import numpy as np
 
-from goal_prox.envs import hand
 from rlf.exp_mgr.viz_utils import save_mp4
 
 

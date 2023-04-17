@@ -88,10 +88,11 @@ class RunSettings(MasterClass):
 
     def get_add_args(self, parser):
         pass
-
+    '''
     def get_logger(self):
+        print("***** here *****")
         return BaseLogger()
-
+    '''
     def get_add_ray_config(self, config):
         return config
 
@@ -180,7 +181,7 @@ class RunSettings(MasterClass):
         log.init(args)
         log.set_prefix(args)
 
-        args.device = torch.device("cuda:0" if args.cuda else "cpu")
+        args.device = torch.device("cuda" if args.cuda else "cpu")
         init_seeds(args)
         if args.detect_nan:
             torch.autograd.set_detect_anomaly(True)
@@ -218,9 +219,9 @@ class RunSettings(MasterClass):
         )
 
         rutils.pstart_sep()
-        print("Action space:", envs.action_space)
+        print("***** Action space: *****", envs.action_space)
         if isinstance(envs.action_space, Box):
-            print("Action range:", (envs.action_space.low, envs.action_space.high))
+            print("***** Action range: *****", (envs.action_space.low, envs.action_space.high))
         print("Observation space", envs.observation_space)
         rutils.pend_sep()
 
@@ -233,7 +234,7 @@ class RunSettings(MasterClass):
 
         # Setup algo
         algo.set_get_policy(self.get_policy, policy_args)
-        algo.init(policy, args)
+        algo.init(policy, envs, args)
         algo.set_env_ref(envs)
 
         # Setup storage buffer

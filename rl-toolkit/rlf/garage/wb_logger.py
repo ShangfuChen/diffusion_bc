@@ -14,7 +14,7 @@ class WbOutput(LogOutput):
             group_id = '-'.join([*parts[:2], *parts[4:]])
         else:
             group_id = None
-
+        
         wandb.init(project=wb_proj_name, name=args.prefix,
                 entity=wb_entity, group=group_id)
         wandb.config.update(args)

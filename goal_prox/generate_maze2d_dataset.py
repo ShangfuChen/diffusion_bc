@@ -15,7 +15,7 @@ from rlf.exp_mgr.viz_utils import save_mp4
 
 
 ENV = "maze2d-medium-v1"
-SAVE_DIR = "data/traj"
+SAVE_DIR = "expert_datasets"
 
 
 def reset_data():
@@ -54,7 +54,7 @@ def npify(data):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--env_name", type=str, default="maze2d-medium-v1", help="Maze type"
+        "--env_name", type=str, default="maze2d-umaze-v1", help="Maze type"
     )
     parser.add_argument("--coverage", type=float, default=1.0)
     parser.add_argument("--noise_ratio", type=float, default=1.0)
@@ -62,7 +62,7 @@ def main():
     parser.add_argument(
         "--num_episodes", type=int, default=1000, help="Num episodes to collect"
     )
-    parser.add_argument("--record", action="store_true")
+    parser.add_argument("--record", default=True, action="store_true")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--min_steps", type=int, default=75)
     args = parser.parse_args()
@@ -74,7 +74,7 @@ def main():
     controller = waypoint_controller.WaypointController(maze)
     env = maze_model.MazeEnv(maze)
     env.seed(args.seed)
-    env.reset_target = True
+    env.reset_target = False
     env.set_coverage(args.coverage)
     env.set_noise_ratio(args.noise_ratio, args.goal_noise_ratio)
 
@@ -97,12 +97,14 @@ def main():
 
         act = act + np.random.randn(*act.shape) * 0.5
         act = np.clip(act, -1.0, 1.0)
+        
+        #next_obs, reward, done, infos
+        ns, _, _, done = env.step(act)
+        done = done['goal_achieved']
+        append_data(episode, s, ns, act, done)
 
         if ts >= max_episode_steps:
             done = True
-
-        ns, _, _, _ = env.step(act)
-        append_data(episode, s, ns, act, done)
 
         if args.record:
             frames.append(env.render("rgb_array"))
@@ -130,7 +132,7 @@ def main():
 
     npify(data)
 
-    save_name = args.env_name.replace("-", "_") + "_expert_dataset_%d_%d.pt" % (
+    save_name = args.env_name.replace("-", "_") + "_expert_dataset_%d_%d_false.pt" % (
         args.num_episodes,
         args.coverage * 100,
     )

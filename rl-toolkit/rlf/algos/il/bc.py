@@ -108,14 +108,17 @@ class BehavioralCloning(BaseILAlgo):
         states, true_actions = self._get_data(expert_batch)
 
         log_dict = {}
-
-        pred_actions, _, _ = self.policy(states, None, None)
+        pred_actions, _,  _ = self.policy(states, None, None)
         if rutils.is_discrete(self.policy.action_space):
             pred_label = rutils.get_ac_compact(self.policy.action_space, pred_actions)
             acc = (pred_label == true_actions.long()).sum().float() / pred_label.shape[
                 0
             ]
             log_dict["_pr_acc"] = acc.item()
+        #print("")
+        #print("pred_action:", pred_actions.size())
+        #print("true_actions:", true_actions.size())
+        #print("")
         loss = autils.compute_ac_loss(
             pred_actions,
             true_actions.view(-1, self.action_dim),
@@ -130,7 +133,6 @@ class BehavioralCloning(BaseILAlgo):
             log_dict["_pr_val_loss"] = val_loss.item()
 
         log_dict["_pr_action_loss"] = loss.item()
-
         return log_dict
 
     def _get_data(self, batch):

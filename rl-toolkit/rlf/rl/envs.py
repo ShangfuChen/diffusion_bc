@@ -175,6 +175,7 @@ class RenderWrapper(gym.Wrapper):
             self.env_cur_obs = self.env_next_obs
             self.env_next_obs = obs
         self.env_cur_reward = reward
+        done = info['goal_achieved']
         return obs, reward, done, info
 
     def render(self, mode, **kwargs):
@@ -301,6 +302,10 @@ class VecPyTorch(VecEnvWrapper):
     def reset(self):
         obs = self.venv.reset()
         obs = self._trans_obs(obs)
+        return obs
+
+    def reset_model(self, states):
+        obs = self.venv.reset_model(states)
         return obs
 
     def step_async(self, actions):

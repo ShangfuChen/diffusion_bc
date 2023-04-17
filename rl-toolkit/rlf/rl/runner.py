@@ -28,6 +28,7 @@ class Runner:
         self.args = args
         self.updater = updater
         self.train_eval_envs = None
+        self.goal_achieved = False
 
         if self.policy.requires_inference_grads():
             self.train_ctx = contextlib.nullcontext
@@ -56,6 +57,8 @@ class Runner:
                     ac_info.clip_action(*self.ac_tensor)
 
             next_obs, reward, done, infos = self.envs.step(ac_info.take_action)
+            #print("done:", done)
+            #print("infos:", infos)
 
             reward += ac_info.add_reward
 
@@ -65,6 +68,8 @@ class Runner:
             self.log.collect_step_info(step_log_vals)
 
             self.storage.insert(obs, next_obs, reward, done, infos, ac_info)
+        # self.storage: rlf.storage.base_storage.BaseStorage
+        # self.updater: rlf.algos.il.diff_il.Diff_il
         updater_log_vals = self.updater.update(self.storage)
 
         self.storage.after_update()
@@ -111,6 +116,10 @@ class Runner:
         )
 
     def save(self, update_iter: int) -> None:
+        print("********** save **********")
+        print("self.episode_count:", self.episode_count)
+        print("self.args.num_steps:", self.args.num_steps)
+        print("self.checkpointer.should_save():", self.checkpointer.should_save())
         if (
             (self.episode_count > 0) or (self.args.num_steps == 0)
         ) and self.checkpointer.should_save():
@@ -127,15 +136,22 @@ class Runner:
                 self.log.backup(self.args, update_iter + 1)
 
     def eval(self, update_iter):
+        print("********** eval **********")
+        print("self.episode_count:", self.episode_count)
+        print("vself.args.num_steps:", self.args.num_steps)
+        print("self.should_start_with_eval:", self.should_start_with_eval)
         if (
             (self.episode_count > 0)
             or (self.args.num_steps <= 1)
             or self.should_start_with_eval
         ):
             total_num_steps = self.updater.get_completed_update_steps(update_iter + 1)
-            self.train_eval_envs = self._eval_policy(
+            self.train_eval_envs, goal_achieved = self._eval_policy(
                 self.policy, total_num_steps, self.args
             )
+        else:
+            goal_achieved = None
+        return goal_achieved
 
     def close(self):
         self.log.close()

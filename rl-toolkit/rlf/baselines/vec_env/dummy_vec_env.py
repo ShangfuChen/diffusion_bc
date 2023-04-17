@@ -65,6 +65,12 @@ class DummyVecEnv(VecEnv):
             obs = self.envs[e].reset()
             self._save_obs(e, obs)
         return self._obs_from_buf()
+    
+    def reset_model(self, states):
+        for e in range(self.num_envs):
+            obs = self.envs[e].reset_model_(states)
+            self._save_obs(e, obs)
+        return obs
 
     def _save_obs(self, e, obs):
         for k in self.keys:

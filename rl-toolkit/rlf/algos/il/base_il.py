@@ -35,9 +35,11 @@ class BaseILAlgo(BaseNetAlgo):
     def _load_expert_data(self, policy, args):
         assert args.traj_load_path is not None, "Must specify expert demonstrations!"
         self.args = args
+        
         self.orig_dataset = self._get_traj_dataset(
             osp.join(args.cwd, args.traj_load_path)
         )
+        print("self.orig_dataset:", self.orig_dataset)
         self.orig_dataset = self.orig_dataset.to(args.device)
         num_trajs = self._create_train_loader(args)
 
@@ -96,6 +98,7 @@ class BaseILAlgo(BaseNetAlgo):
             return self.expert_dataset.get_num_trajs()
 
     def _get_next_data(self):
+
         if self.exp_generator is None:
             if self.data_iter is None:
                 self.data_iter = iter(self.expert_train_loader)
@@ -146,6 +149,7 @@ class BaseILAlgo(BaseNetAlgo):
     def get_add_args(self, parser):
         super().get_add_args(parser)
         parser.add_argument("--traj-load-path", type=str, default=None)
+        parser.add_argument("--ddpm-path", type=str, default=None)
         parser.add_argument("--traj-batch-size", type=int, default=128)
         parser.add_argument(
             "--traj-val-ratio",

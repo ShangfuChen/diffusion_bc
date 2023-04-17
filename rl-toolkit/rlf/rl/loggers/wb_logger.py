@@ -105,8 +105,9 @@ class WbLogger(BaseLogger):
         args.prefix = self.prefix
         if self.prefix.count("-") >= 4:
             # Remove the seed and random ID info.
-            parts = self.prefix.split("-")
-            group_id = "-".join([*parts[:2], *parts[4:]])
+            #parts = self.prefix.split("-")
+            #group_id = "-".join([*parts[:2], *parts[4:]])
+            group_id = self.prefix
         else:
             group_id = None
 
@@ -131,4 +132,5 @@ class WbLogger(BaseLogger):
 
     def close(self):
         self.is_closed = True
-        self.run.finish()
+        #self.run.finish()
+        wandb.run.save()

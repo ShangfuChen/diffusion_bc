@@ -1,13 +1,13 @@
-import sys
-
+import sys, os
+os.environ['CUDA_VISIBLE_DEVICES'] = '1' 
 sys.path.insert(0, "./")
 
 from functools import partial
 
 import d4rl
 import torch.nn as nn
-from rlf import run_policy
-from rlf.algos import (GAIL, PPO, BaseAlgo, BehavioralCloning,
+from rlf import run_policy, evaluate_policy
+from rlf.algos import (GAIL, PPO, BaseAlgo, BehavioralCloning, Diff_il,
                        BehavioralCloningFromObs, BehavioralCloningPretrain,
                        GailDiscrim)
 from rlf.algos.il.base_il import BaseILAlgo
@@ -44,6 +44,7 @@ from goal_prox.method.utils import trim_episodes_trans
 from goal_prox.models import GwImgEncoder
 from goal_prox.policies.grid_world_expert import GridWorldExpert
 
+import time
 
 def get_ppo_policy(env_name, args):
     if env_name.startswith("MiniGrid") and args.gw_img:
@@ -119,6 +120,7 @@ def get_setup_dict():
         "action-replay": (BaseAlgo(), lambda env_name, _: ActionReplayPolicy()),
         "rnd": (BaseAlgo(), lambda env_name, _: RandomPolicy()),
         "bc": (BehavioralCloning(), partial(get_basic_policy, is_stoch=False)),
+        "diff-il": (Diff_il(), partial(get_basic_policy, is_stoch=False)),
         "bco": (BehavioralCloningFromObs(), partial(get_basic_policy, is_stoch=True)),
         "bc-deep": (BehavioralCloning(), get_deep_basic_policy),
         "dpf": (DiscountedProxIL(), get_ppo_policy),
@@ -184,4 +186,10 @@ class GoalProxSettings(RunSettings):
 
 
 if __name__ == "__main__":
+    start = time.time()
     run_policy(GoalProxSettings())
+    end = time.time()
+    print("The time used to execute this is:", end - start)
+    with open('execute_time.txt', 'w', encoding='utf-8') as f:
+        f.write("The time used to execute this is:{}".format(end - start))
+    #evaluate_policy(GoalProxSettings())

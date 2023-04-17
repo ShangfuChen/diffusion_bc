@@ -227,6 +227,7 @@ class MLPBase(BaseNet):
           output.
         """
         super().__init__(recurrent, num_inputs, hidden_sizes[-1])
+        #num_inputs = 6
 
         assert len(hidden_sizes) > 0
 
@@ -242,7 +243,7 @@ class MLPBase(BaseNet):
 
     def forward(self, inputs, hxs, masks):
         x = inputs
-
+        
         if self.is_recurrent:
             x, hxs = self._forward_gru(x, hxs, masks)
 

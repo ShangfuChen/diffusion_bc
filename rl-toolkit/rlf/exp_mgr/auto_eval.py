@@ -28,6 +28,7 @@ def convert_to_prefix(run_names, info):
 
 
 def eval_from_file(plot_cfg_path, load_dir, get_run_settings, args):
+    plot_cfg_path = osp.join(os.getcwd(), plot_cfg_path)
     with open(plot_cfg_path) as f:
         eval_settings = yaml.load(f)
         config_mgr.init(eval_settings['config_yaml'])
@@ -70,7 +71,7 @@ def eval_from_file(plot_cfg_path, load_dir, get_run_settings, args):
 
         max_idx = max(model_nums)
         use_model = osp.join(model_dir, f"model_{max_idx}.pt")
-
+        
         with open(osp.join(cmd_path,'cmd.txt'), 'r') as f:
             cmd = f.read()
 
@@ -104,6 +105,7 @@ def eval_from_file(plot_cfg_path, load_dir, get_run_settings, args):
                 run_settings.setup()
                 eval_result = run_settings.eval_result
                 cache_result.save(eval_result)
+            print("*** args.get_key ***", args.get_key)
             store_num = eval_result[args.get_key]
             env_results[info['report_name']][method_name].append(store_num)
             rutils.pstart_sep()
