@@ -1,0 +1,45 @@
+project: 'diffusion'
+program: goal_prox/main.py
+method: grid
+
+parameters:
+  seed:
+    values: [1, 2, 3]
+  prefix:
+    value: "ae-bc"
+  alg:
+    value: "ae-bc"
+  traj-load-path:
+    value: "./expert_datasets/push_10000_clip.pt"
+  ae-path:
+    value: "./rl-toolkit/rlf/algos/il/vae/push_10000_clip_vae_1e-5.pt"
+  coeff:
+    value: 0.1
+  env-name:
+    value: "FetchPushEnvCustom-v0"
+  normalize-env:
+    value: False
+  bc-num-epochs:
+    value: 4000
+  eval-num-processes:
+    value: 1
+  cuda:
+    value: True
+  num-render:
+    value: 1
+  num-eval:
+    value: 100
+  vid-fps:
+    value: 100
+  lr:
+    values: [0.000001]
+  log-interval:
+    value: 2000
+  save-interval:
+    value: 100000
+  eval-interval:
+    value: 4000
+  bc-state-norm:
+    value: True
+  clip-actions:
+    value: True

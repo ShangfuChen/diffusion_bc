@@ -1,0 +1,39 @@
+project: 'diffusion'
+program: goal_prox/main.py
+method: grid
+
+parameters:
+  seed:
+    values: [2, 3, 4]
+  prefix:
+    value: "bc"
+  alg:
+    value: "bc"
+  device:
+    value: "0"
+  traj-load-path:
+    value: "./expert_datasets/trajs_halfcheetah_processed.pt"
+  env-name:
+    value: "HalfCheetah-v3"
+  normalize-env:
+    value: False
+  bc-num-epochs:
+    value: 150
+  eval-num-processes:
+    value: 1
+  cuda:
+    value: True
+  num-render:
+    value: 1
+  num-eval:
+    value: 100
+  vid-fps:
+    value: 100
+  lr:
+    value: 0.0001
+  log-interval:
+    value: 1000
+  save-interval:
+    value: 50000
+  eval-interval:
+    value: 1000
