@@ -8,6 +8,8 @@ from rlf.algos.base_net_algo import BaseNetAlgo
 from rlf.il.transition_dataset import TransitionDataset
 from rlf.rl import utils
 
+def str2bool(v):
+    return v.lower() == "true"
 
 class ExperienceGenerator(object):
     def init(self, policy, args, exp_gen_num_trans):
@@ -125,10 +127,10 @@ class BaseILAlgo(BaseNetAlgo):
     def _adjust_action(self, x):
         if not self.args.il_in_action_norm:
             return x
-        return (x) / (self.expert_stats["action"][1] + 1e-8)
+        return (x-self.expert_stats['action'][0]) / (self.expert_stats["action"][1] + 1e-8)
 
     def _denorm_action(self, x):
-        return (x) * self.expert_stats["action"][1]
+        return (x) * (self.expert_stats["action"][1] + 1e-8) + self.expert_stats['action'][0]
 
     def init(self, policy, args):
         # Load the expert data first, so we can calculate the needed number of
@@ -150,6 +152,7 @@ class BaseILAlgo(BaseNetAlgo):
         super().get_add_args(parser)
         parser.add_argument("--traj-load-path", type=str, default=None)
         parser.add_argument("--ddpm-path", type=str, default=None)
+        parser.add_argument("--ae-path", type=str, default=None)
         parser.add_argument("--traj-batch-size", type=int, default=128)
         parser.add_argument(
             "--traj-val-ratio",
@@ -177,13 +180,13 @@ class BaseILAlgo(BaseNetAlgo):
         # denormalize the output when being passed to the environment.
         parser.add_argument(
             "--il-in-action-norm",
-            action="store_true",
-            default=False,
+            type=str2bool,
+            default=True,
             help="Normalize expert actions input to the policy",
         )
         parser.add_argument(
             "--il-out-action-norm",
-            action="store_true",
-            default=False,
+            type=str2bool,
+            default=True,
             help="Denormalize actions in the environment",
         )

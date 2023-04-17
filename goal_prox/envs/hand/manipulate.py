@@ -73,7 +73,9 @@ class ManipulateEnv(hand_env.HandEnv):
         # added for goal-proximity
         self.easy = False
         self.noise_ratio = 1.0
-
+        self.init_pos = None
+        self.target_pos = None
+        # import ipdb; ipdb.set_trace()
         assert self.target_position in ['ignore', 'fixed', 'random']
         assert self.target_rotation in ['ignore', 'fixed', 'xyz', 'z', 'parallel']
         initial_qpos = initial_qpos or {}
@@ -81,6 +83,7 @@ class ManipulateEnv(hand_env.HandEnv):
         hand_env.HandEnv.__init__(
             self, model_path, n_substeps=n_substeps, initial_qpos=initial_qpos,
             relative_control=relative_control)
+
 
     def _get_achieved_goal(self):
         # Object position and rotation.
@@ -100,7 +103,6 @@ class ManipulateEnv(hand_env.HandEnv):
 
         if self.target_rotation != 'ignore':
             quat_a, quat_b = goal_a[..., 3:], goal_b[..., 3:]
-
             if self.ignore_z_target_rotation:
                 # Special case: We want to ignore the Z component of the rotation.
                 # This code here assumes Euler angles with xyz convention. We first transform
@@ -129,7 +131,11 @@ class ManipulateEnv(hand_env.HandEnv):
             d_pos, d_rot = self._goal_distance(achieved_goal, goal)
             # We weigh the difference in position to avoid that `d_pos` (in meters) is completely
             # dominated by `d_rot` (in radians).
-            return -(10. * d_pos + d_rot)
+            rew = self.prev_dis - (10. * d_pos + d_rot) 
+            if self.prev_dis == 0:
+                rew = 0
+            self.prev_dis = (10. * d_pos + d_rot)
+            return rew
 
     # RobotEnv methods
     # ----------------------------
@@ -168,8 +174,10 @@ class ManipulateEnv(hand_env.HandEnv):
             if self.target_rotation == 'z':
                 angle = self.np_random.uniform(-np.pi, np.pi)
                 if self.easy:
-                    start = -0.1 - (self.noise_ratio - 1)
-                    end = 0.1
+                    # start = -0.1 - (self.noise_ratio - 1)
+                    # end = 0.1
+                    start = -np.pi/12
+                    end = np.pi/12
                     angle = self.np_random.uniform(start, end)
                 axis = np.array([0., 0., 1.])
                 offset_quat = quat_from_angle_and_axis(angle, axis)
@@ -198,6 +206,7 @@ class ManipulateEnv(hand_env.HandEnv):
 
         initial_quat /= np.linalg.norm(initial_quat)
         initial_qpos = np.concatenate([initial_pos, initial_quat])
+        self.init_pos = initial_qpos
         self.sim.data.set_joint_qpos('object:joint', initial_qpos)
 
         def is_on_palm():
@@ -239,13 +248,15 @@ class ManipulateEnv(hand_env.HandEnv):
                 axis = np.array([0., 0., 1.])
                 target_quat = quat_from_angle_and_axis(angle, axis)
             else:
-                start = np.pi / 3 - (self.noise_ratio - 1)
-                end = np.pi / 2 + (self.noise_ratio - 1)
+                # start = np.pi / 3 - (self.noise_ratio - 1)
+                # end = np.pi / 2 + (self.noise_ratio - 1)
+                start = np.pi / 12 * 3
+                end = np.pi / 12 * 5
                 angle = self.np_random.uniform(start, end)
                 axis = np.array([0., 0., 1.])
                 target_quat = quat_from_angle_and_axis(angle, axis)
-                initial_quat = self.sim.data.get_joint_qpos('object:joint').copy()[3:]
-                target_quat = rotations.quat_mul(target_quat, initial_quat)
+                # initial_quat = self.sim.data.get_joint_qpos('object:joint').copy()[3:]
+                # target_quat = rotations.quat_mul(target_quat, initial_quat)
         elif self.target_rotation == 'parallel':
             angle = self.np_random.uniform(-np.pi, np.pi)
             axis = np.array([0., 0., 1.])

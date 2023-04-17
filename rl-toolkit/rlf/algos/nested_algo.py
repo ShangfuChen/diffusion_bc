@@ -1,4 +1,5 @@
 from typing import Optional
+import torch
 
 from rlf.algos.base_algo import BaseAlgo
 
@@ -22,9 +23,11 @@ class NestedAlgo(BaseAlgo):
         self.designated_rl_idx = designated_rl_idx
         self.designated_settings_idx = designated_settings_idx
 
-    def init(self, policy, args):
+    def init(self, policy, envs, args):
         for module in self.modules:
             module.init(policy, args)
+        self.args = args
+            
 
     def get_steps_generator(self, update_iter):
         return self.modules[self.designated_rl_idx].get_steps_generator(update_iter)
@@ -88,9 +91,25 @@ class NestedAlgo(BaseAlgo):
         for module in self.modules:
             module.first_train(log, eval_policy, env_interface)
 
+    def _get_data(self, batch):
+        states = batch["state"].to(self.args.device)
+        if self.args.gail_state_norm:
+            states = self._norm_state(states)
+
+        if self.args.gail_noise is not None:
+            add_noise = torch.randn(states.shape) * self.args.bc_noise
+            states += add_noise.to(self.args.device)
+            states = states.detach()
+
+        true_actions = batch["actions"].to(self.args.device)
+        true_actions = self._adjust_action(true_actions)
+        return states, true_actions
+
     def update(self, storage):
         log_vals = {}
-        for module in self.modules:
+        #expert_batch = self.modules[0]._get_next_data()
+        #states, true_actions = self._get_data(expert_batch)
+        for iter, module in enumerate(self.modules):
             add_log_vals = module.update(storage)
             log_vals = {**log_vals, **add_log_vals}
         return log_vals

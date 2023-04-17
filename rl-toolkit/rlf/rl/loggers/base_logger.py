@@ -224,8 +224,8 @@ class BaseLogger(object):
         log_stat_vals = {}
         for k, v in self._step_log_info.items():
             log_stat_vals["avg_" + k] = np.mean(v)
-            log_stat_vals["min_" + k] = np.min(v)
-            log_stat_vals["max_" + k] = np.max(v)
+            # log_stat_vals["min_" + k] = np.min(v)
+            # log_stat_vals["max_" + k] = np.max(v)
 
         def should_print(x):
             return "_pr_" in x
@@ -234,7 +234,7 @@ class BaseLogger(object):
             **updater_log_vals,
             **log_stat_vals,
         }
-
+        
         if self.is_printing:
             print(
                 f"Updates {num_updates}, Steps {total_num_steps}, Episodes {episode_count}, FPS {fps}"

@@ -58,7 +58,7 @@ def run_policy(run_settings, runner=None):
             runner.load_from_checkpoint()
 
         if args.eval_only:
-            eval_result = runner.full_eval(run_settings.create_traj_saver, 0)
+            eval_result = runner.full_eval(run_settings.create_traj_saver)
             return RunResult(prefix=args.prefix, eval_result=eval_result)
 
         start_update = 0
@@ -77,48 +77,24 @@ def run_policy(run_settings, runner=None):
         j = 0
         print("start_update:", start_update)
         print("end_update:", end_update)
-        print("sudo_batch_size:",  sudo_batch_size)
-        print("args.log_interval:", args.log_interval)
-        print("args.eval_interval:", args.eval_interval)
-        print("args.save_interval:", args.save_interval)
-        print("runner:", runner)
-        print("runner.updater:", runner.updater) #rlf.algos.il.gail.GAIL
-        print("type(runner.updater):", type(runner.updater))
         print("runner.updater.split", str(type(runner.updater)).split('.')[-1].split('\'')[0])
         for j in range(start_update, end_update):
             updater_log_vals = runner.training_iter(j)
             if args.log_interval > 0 and (j + 1) % args.log_interval == 0:
                 log_dict = runner.log_vals(updater_log_vals, j)
-            if (j+1) % sudo_batch_size == 0:
+            if (j+1) % args.save_interval == 0:
                 runner.save(j)
-            if (j+1) % sudo_batch_size == 0:
+            if (j+1) % args.eval_interval == 0:
                 goal_achieved = runner.eval(j)
-                train_info_list.append(str(goal_achieved))
-                    
-        epoch_list = list(range(len(train_info_list)))
-        dataframe = pd.DataFrame({'epoch':epoch_list, 'goal_achieved':train_info_list})
-        dataframe.to_csv("train_info_" + str(type(runner.updater)).split('.')[-1].split('\'')[0] + ".csv", index=False, sep=',')
         
         if args.eval_interval > 0:
             runner.eval(j + 1)
-        
         if args.save_interval > 0:
             runner.save(j + 1)
-        '''
-        eval_num = sudo_batch_size * 100
-        for i in range(j + 1, j + eval_num + 1):
-            if (j+1) % (j+1) % sudo_batch_size == 0:
-                goal_achieved = runner.eval(j)
-                eval_info_list.append(str(goal_achieved))
-                
-        epoch_list = list(range(len(eval_info_list)))
-        dataframe = pd.DataFrame({'epoch':epoch_list, 'goal_achieved':eval_info_list})
-        dataframe.to_csv("eval_info.csv", index=False, sep=',')
-        '''
-
         runner.close()
         # WB prefix of the run so we can later fetch the data.
         return RunResult(args.prefix)
+
 
 def evaluate_policy(run_settings, runner=None):
     if runner is None:
@@ -162,13 +138,17 @@ def evaluate_policy(run_settings, runner=None):
         
         if runner.should_load_from_checkpoint():
             runner.load_from_checkpoint()
-   
+ 
         if args.eval_only:
-            eval_result, goal_achieved = runner.full_eval(run_settings.create_traj_saver)
+            eval_result, goal_achieved, eval_step_list= runner.full_eval(run_settings.create_traj_saver)
+            succ_steps = [b for a, b in zip( goal_achieved, eval_step_list) if a]
+            print("ave_succ_steps:", sum(succ_steps) / len(succ_steps))
+
             epoch = list(range(1, len(goal_achieved)+2))
             succ_rate = np.sum(goal_achieved) / args.num_eval
             goal_achieved.append(succ_rate)
-            dataframe = pd.DataFrame({'epoch': epoch, 'goal_achieved':goal_achieved})
+            eval_step_list.append(0)
+            dataframe = pd.DataFrame({'epoch': epoch, 'goal_achieved':goal_achieved, 'eval_step_list:': eval_step_list})
             algo = str(type(runner.updater)).split('.')[-1].split('\'')[0]
             dataframe.to_csv(algo + "_test.csv", index=False, sep=',')
             print("succ_rate:", succ_rate)

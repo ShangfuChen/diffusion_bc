@@ -1,5 +1,4 @@
 import sys, os
-os.environ['CUDA_VISIBLE_DEVICES'] = '1' 
 sys.path.insert(0, "./")
 
 from functools import partial
@@ -7,8 +6,8 @@ from functools import partial
 import d4rl
 import torch.nn as nn
 from rlf import run_policy, evaluate_policy
-from rlf.algos import (GAIL, PPO, BaseAlgo, BehavioralCloning, Diff_il,
-                       BehavioralCloningFromObs, BehavioralCloningPretrain,
+from rlf.algos import (GAIL, DDPG, PPO, BaseAlgo, BehavioralCloning, Diff_bc, DiffPolicy, 
+                       Ae_bc, BehavioralCloningFromObs, BehavioralCloningPretrain,
                        GailDiscrim)
 from rlf.algos.il.base_il import BaseILAlgo
 from rlf.algos.il.gaifo import GAIFO
@@ -66,8 +65,10 @@ def get_deep_ppo_policy(env_name, args):
 
 def get_deep_sac_policy(env_name, args):
     return DistActorQ(
-        get_critic_fn=partial(get_sac_critic, hidden_dim=256),
-        get_actor_fn=partial(get_sac_actor, hidden_dim=256),
+        # get_critic_fn=partial(get_sac_critic, hidden_dim=256),
+        # get_actor_fn=partial(get_sac_actor, hidden_dim=256),
+        get_critic_fn=get_sac_critic,
+        get_actor_fn=get_sac_actor,
     )
 
 
@@ -110,6 +111,7 @@ def get_setup_dict():
     return {
         "gail": (GAIL(), get_ppo_policy),
         "gail-deep": (GAIL(), get_deep_ppo_policy),
+        "ddpg": (DDPG(), get_deep_ddpg_policy),
         "uncert-gail-deep": (UncertGAIL(), get_deep_ppo_policy),
         "uncert-gail": (UncertGAIL(), get_ppo_policy),
         "gaifo": (GAIFO(), get_ppo_policy),
@@ -120,7 +122,9 @@ def get_setup_dict():
         "action-replay": (BaseAlgo(), lambda env_name, _: ActionReplayPolicy()),
         "rnd": (BaseAlgo(), lambda env_name, _: RandomPolicy()),
         "bc": (BehavioralCloning(), partial(get_basic_policy, is_stoch=False)),
-        "diff-il": (Diff_il(), partial(get_basic_policy, is_stoch=False)),
+        "diff-bc": (Diff_bc(), partial(get_basic_policy, is_stoch=False)),
+        "diff-policy": (DiffPolicy(), partial(get_basic_policy, is_stoch=False)),
+        "ae-bc": (Ae_bc(), partial(get_basic_policy, is_stoch=False)),
         "bco": (BehavioralCloningFromObs(), partial(get_basic_policy, is_stoch=True)),
         "bc-deep": (BehavioralCloning(), get_deep_basic_policy),
         "dpf": (DiscountedProxIL(), get_ppo_policy),
@@ -192,4 +196,4 @@ if __name__ == "__main__":
     print("The time used to execute this is:", end - start)
     with open('execute_time.txt', 'w', encoding='utf-8') as f:
         f.write("The time used to execute this is:{}".format(end - start))
-    #evaluate_policy(GoalProxSettings())
+    # evaluate_policy(GoalProxSettings())

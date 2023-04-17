@@ -10,13 +10,35 @@ register(
     max_episode_steps=50,
 )
 
-
 register(
         id='CustomHandManipulateBlockRotateZ-v0',
         entry_point='goal_prox.envs.hand.manipulate:HandBlockEnv',
-        kwargs={'target_position': 'ignore', 'target_rotation': 'z', 'reward_type': 'sparse'},
+        kwargs={'target_position': 'ignore', 'target_rotation': 'z', 'reward_type': 'dense'},
         max_episode_steps=50,
     )
 
+register(
+        id='CustomHandManipulateBlockRotateZ-v1',
+        entry_point='goal_prox.envs.hand.manipulate_v1:HandBlockEnv',
+        kwargs={'target_position': 'ignore', 'target_rotation': 'z', 'reward_type': 'dense'},
+        max_episode_steps=50,
+    )
+
+register(
+        id='CustomHandManipulateBlockRotateZ-v2',
+        entry_point='goal_prox.envs.hand.manipulate_v2:HandBlockEnv',
+        kwargs={'target_position': 'ignore', 'target_rotation': 'z', 'reward_type': 'dense'},
+        max_episode_steps=50,
+    )
+
+register(
+        id='CustomHandManipulateBlockRotateZ-v3',
+        entry_point='goal_prox.envs.hand.manipulate_v3:HandBlockEnv',
+        kwargs={'target_position': 'ignore', 'target_rotation': 'z', 'reward_type': 'dense'},
+        max_episode_steps=50,
+    )
 register_env_interface("HandReachCustom-v0", GymHandInterface)
 register_env_interface("CustomHandManipulateBlockRotateZ-v0", GymHandInterface)
+register_env_interface("CustomHandManipulateBlockRotateZ-v1", GymHandInterface)
+register_env_interface("CustomHandManipulateBlockRotateZ-v2", GymHandInterface)
+register_env_interface("CustomHandManipulateBlockRotateZ-v3", GymHandInterface)

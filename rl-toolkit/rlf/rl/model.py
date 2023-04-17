@@ -231,7 +231,9 @@ class MLPBase(BaseNet):
 
         assert len(hidden_sizes) > 0
 
-        layers = [weight_init(nn.Linear(num_inputs, hidden_sizes[0])), get_activation()]
+        layers = [
+                weight_init(nn.Linear(num_inputs, hidden_sizes[0])),
+                  get_activation()]
         # Minus one for the input layer
         for i in range(len(hidden_sizes) - 1):
             layers.append(weight_init(nn.Linear(hidden_sizes[i], hidden_sizes[i + 1])))
@@ -280,8 +282,10 @@ class TwoLayerMlpWithAction(BaseNet):
 
         self.net = nn.Sequential(
             weight_init(nn.Linear(num_inputs + action_dim, hidden_sizes[0])),
+            nn.BatchNorm1d(hidden_sizes[0]),
             get_activation(),
             weight_init(nn.Linear(hidden_sizes[0], hidden_sizes[1])),
+            nn.BatchNorm1d(hidden_sizes[1]),
             get_activation(),
         )
 

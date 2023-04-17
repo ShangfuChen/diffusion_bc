@@ -5,8 +5,14 @@ import torch.optim as optim
 from collections import defaultdict
 from rlf.algos.on_policy.on_policy_base import OnPolicy
 
+
 class PPO(OnPolicy):
+    def __init__(self, algo_name='else'):
+        super().__init__()
+        self.algo_name = algo_name
+
     def update(self, rollouts):
+        
         self._compute_returns(rollouts)
         advantages = rollouts.compute_advantages()
 
@@ -43,9 +49,9 @@ class PPO(OnPolicy):
                                                  value_losses_clipped).mean()
                 else:
                     value_loss = 0.5 * (sample['return'] - ac_eval['value']).pow(2).mean()
-
                 loss = (value_loss * self._arg('value_loss_coef') + action_loss -
                      ac_eval['ent'].mean() * self._arg('entropy_coef'))
+
 
                 self._standard_step(loss)
 

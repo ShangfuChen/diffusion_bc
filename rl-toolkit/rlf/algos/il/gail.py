@@ -169,8 +169,8 @@ class GailDiscrim(BaseIRLAlgo):
         if agent_sampler is None:
             # algo requested not to update this step
             return {}
-
         for epoch_i in range(self.args.n_gail_epochs):
+        # for epoch_i in range(5):
             for expert_batch, agent_batch in zip(expert_sampler, agent_sampler):
                 expert_batch, agent_batch = self._trans_batches(
                     expert_batch, agent_batch)

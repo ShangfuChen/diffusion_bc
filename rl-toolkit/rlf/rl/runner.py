@@ -8,7 +8,8 @@ from rlf.baselines.vec_env import VecEnvWrapper
 from rlf.policies.base_policy import get_step_info
 from rlf.rl import utils
 from rlf.rl.envs import get_vec_normalize, make_vec_envs
-from rlf.rl.evaluation import full_eval, train_eval
+
+import rlf.rl.evaluation as evaluation
 
 
 class Runner:
@@ -26,6 +27,7 @@ class Runner:
         self.env_interface = env_interface
         self.checkpointer = checkpointer
         self.args = args
+
         self.updater = updater
         self.train_eval_envs = None
         self.goal_achieved = False
@@ -94,7 +96,9 @@ class Runner:
             self.ac_tensor = utils.ac_space_to_tensor(self.policy.action_space)
 
     def _eval_policy(self, policy, total_num_steps, args) -> Optional[VecEnvWrapper]:
-        return train_eval(
+        print('### Use custom evaluation ###')
+        print()
+        return evaluation.train_eval(
             self.envs,
             self.alg_env_settings,
             policy,
@@ -104,7 +108,7 @@ class Runner:
             self.env_interface,
             self.train_eval_envs,
         )
-
+    
     def log_vals(self, updater_log_vals, update_iter):
         total_num_steps = self.updater.get_completed_update_steps(update_iter + 1)
         return self.log.interval_log(
@@ -188,8 +192,10 @@ class Runner:
             vec_norm = get_vec_normalize(tmp_env)
             if vec_norm is not None:
                 vec_norm.ob_rms_dict = ob_rms_dict
-
-        return full_eval(
+        
+        print('### Use Custom evaluation ###')
+        print()
+        return evaluation.full_eval(
             self.envs,
             self.policy,
             self.log,
@@ -200,7 +206,7 @@ class Runner:
             create_traj_saver_fn,
             vec_norm,
         )
-
+    
     def load_from_checkpoint(self):
         self.policy.load_state_dict(self.checkpointer.get_key("policy"))
 

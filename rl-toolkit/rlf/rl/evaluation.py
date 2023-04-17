@@ -11,9 +11,6 @@ from rlf.policies.base_policy import get_empty_step_info
 from rlf.rl import utils
 from rlf.rl.envs import get_vec_normalize, make_vec_envs
 from tqdm import tqdm
-from rlf.algos import (GAIL, PPO, BaseAlgo, BehavioralCloning, Diff_il,
-                       BehavioralCloningFromObs, BehavioralCloningPretrain,
-                       GailDiscrim)
 
 def eval_print(
     env_interface,
@@ -28,7 +25,8 @@ def eval_print(
 ):
     print("Evaluating " + mode)
     args.evaluation_mode = True
-    eval_info, eval_envs, goal_achieved = evaluate(
+    #ret_info, eval_envs, goal_achieved, eval_step_list
+    eval_info, eval_envs, goal_achieved, _ = evaluate(
         args,
         alg_env_settings,
         policy,
@@ -89,7 +87,7 @@ def full_eval(
     vec_norm,
 ):
     args.evaluation_mode = True
-    ret_info, envs, goal_achieved = evaluate(
+    ret_info, envs, goal_achieved, eval_step_list = evaluate(
         args,
         alg_env_settings,
         policy,
@@ -104,7 +102,7 @@ def full_eval(
     args.evaluation_mode = False
     envs.close()
 
-    return ret_info, goal_achieved
+    return ret_info, goal_achieved, eval_step_list
 
 
 def evaluate(
@@ -123,7 +121,7 @@ def evaluate(
         num_processes = args.num_processes
     else:
         num_processes = args.eval_num_processes
-
+    
     if eval_envs is None:
         args.force_multi_proc = False
         eval_envs = make_vec_envs(
@@ -144,7 +142,6 @@ def evaluate(
     if true_vec_norm is not None:
         obfilt = true_vec_norm._obfilt
     else:
-
         def obfilt(x, update):
             return x
 
@@ -178,10 +175,7 @@ def evaluate(
     # Measure the number of episodes completed
     pbar = tqdm(total=total_num_eval)
     evaluated_episode_count = 0
-    n_succs = 0
-    n_fails = 0
-    succ_frames = []
-    fail_frames = []
+
     if args.render_succ_fails and args.eval_num_processes > 1:
         raise ValueError(
             """
@@ -207,9 +201,11 @@ def evaluate(
     
     is_succ = False
     goal_achieved = []
-    num_steps = 0
     flag = 0
     count_flag = False
+    step_num = 0 # the number counting time steps
+    eval_step_list = []
+    eval_episode_rewards = []
     while evaluated_episode_count < total_num_eval:
         step_info = get_empty_step_info()
         with torch.no_grad():
@@ -230,28 +226,29 @@ def evaluate(
         next_obs, _, done, infos = eval_envs.step(ac_info.take_action)
         if args.eval_save:
             finished_count = traj_saver.collect(
-                obs, next_obs, done, ac_info.take_action, infos
+                obs['observation'], next_obs['observation'], done, ac_info.take_action, infos
             )
         else:
             finished_count = sum([int(d) for d in done])
-            #finished_count = int(infos[0]["goal_achieved"])
-        
+
         pbar.update(finished_count)
         evaluated_episode_count += finished_count
+        # for info in infos:
+            # if evaluated_episode_count >= total_num_eval:
+                # break
+            # if 'episode' in info.keys():
+                # evaluated_episode_count += 1  
+                # pbar.update(1)
 
         cur_frame = None
-
         eval_masks = torch.tensor(
             [[0.0] if done_ else [1.0] for done_ in done],
             dtype=torch.float32,
             device=args.device,
         )
-
         should_render = (args.num_render) is None or (
             evaluated_episode_count < args.num_render
         )
-        if args.render_succ_fails:
-            should_render = n_succs < args.num_render or n_fails < args.num_render
 
         if should_render and flag>=0:
             frames.extend(
@@ -268,41 +265,11 @@ def evaluate(
                 )
             )
         obs = next_obs
-
         step_log_vals = utils.agg_ep_log_stats(infos, ac_info.extra)
         
         for k, v in step_log_vals.items():
             ep_stats[k].extend(v)
         
-        if count_flag:
-            flag  = flag - 1
-        
-        if is_succ == False:
-            is_succ = infos[0]["goal_achieved"]
-            if is_succ:
-                flag = 2
-                count_flag = True
-        
-        if finished_count == 1:
-            #is_succ = step_log_vals["ep_found_goal"][0]
-            goal_achieved.append(is_succ)
-            save_frames(frames, 'each', evaluated_episode_count, args)
-            frames = []
-            is_succ = False
-            flag = 0
-            count_flag = False
-
-        if "ep_success" in step_log_vals and args.render_succ_fails:
-            is_succ = step_log_vals["ep_success"][0]
-            if is_succ == 1.0:
-                if n_succs < args.num_render:
-                    succ_frames.extend(frames)
-                n_succs += 1
-            else:
-                if n_fails < args.num_render:
-                    fail_frames.extend(frames)
-                n_fails += 1
-
     pbar.close()
     info = {}
     if args.eval_save:
@@ -310,27 +277,20 @@ def evaluate(
 
     ret_info = {}
 
-    print(" Evaluation using %i episodes:" % len(ep_stats["r"]))
+    print("Evaluation using %i episodes:" % len(ep_stats["r"]))
     for k, v in ep_stats.items():
         print(" - %s: %.5f" % (k, np.mean(v)))
+        # if k == 'l':
+            # print(np.mean(v))
+            # print(np.std(v))
         ret_info[k] = np.mean(v)
-    
-    succ_rate = np.sum(goal_achieved) / args.num_eval
-    ret_info['Goal_Completion'] = succ_rate
-
-    if args.render_succ_fails:
-        # Render the success and failures to two separate files.
-        save_frames(succ_frames, "succ_" + mode, num_steps, args)
-        save_frames(fail_frames, "fail_" + mode, num_steps, args)
-    else:
-        save_file = save_frames(frames, mode, num_steps, args)
-        if save_file is not None:
-            log.log_video(save_file, num_steps, args.vid_fps)
-
+    save_file = save_frames(frames, mode, num_steps, args)
+    if save_file is not None:
+        log.log_video(save_file, num_steps, args.vid_fps)
     # Switch policy back to train mode
     policy.train()
 
-    return ret_info, eval_envs, goal_achieved
+    return ret_info, eval_envs, goal_achieved, eval_step_list
 
 
 def save_frames(frames, mode, num_steps, args):

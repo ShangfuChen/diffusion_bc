@@ -192,7 +192,9 @@ class TransitionStorage(BaseStorage):
 
             np.copyto(self.actions[buffer_slice], action[batch_slice])
             np.copyto(self.rewards[buffer_slice], reward[batch_slice])
-            np.copyto(self.masks[buffer_slice], done[batch_slice])
+            # import ipdb
+            # ipdb.set_trace()
+            np.copyto(self.masks[buffer_slice].squeeze(), done[batch_slice])
             np.copyto(self.masks_no_max[buffer_slice], bad_masks[batch_slice])
 
         _batch_start = 0

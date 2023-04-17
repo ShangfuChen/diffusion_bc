@@ -54,7 +54,7 @@ def npify(data):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--env_name", type=str, default="maze2d-umaze-v1", help="Maze type"
+        "--env_name", type=str, default="maze2d-medium-v1", help="Maze type"
     )
     parser.add_argument("--coverage", type=float, default=1.0)
     parser.add_argument("--noise_ratio", type=float, default=1.0)
@@ -91,12 +91,13 @@ def main():
     if args.record:
         frames = [env.render("rgb_array")]
     while cnt_episodes < args.num_episodes:
+    #for k in range(1):
         position = s[0:2]
         velocity = s[2:4]
         act, done = controller.get_action(position, velocity, env._target)
 
-        act = act + np.random.randn(*act.shape) * 0.5
-        act = np.clip(act, -1.0, 1.0)
+        #act = act + np.random.randn(*act.shape) * 0.5
+        #act = np.clip(act, -1.0, 1.0)
         
         #next_obs, reward, done, infos
         ns, _, _, done = env.step(act)
@@ -115,6 +116,7 @@ def main():
                 # frames = np.stack(frames)
                 save_mp4(frames, "./", "maze2d", fps=30, no_frame_drop=True)
                 frames = []
+                break
 
             print(ts)
             s = env.reset()

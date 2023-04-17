@@ -7,15 +7,20 @@ import numpy as np
 import rlf.algos.utils as autils
 import rlf.rl.utils as rutils
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from rlf.algos.il.base_il import BaseILAlgo
 from rlf.args import str2bool
 from rlf.storage.base_storage import BaseStorage
 from tqdm import tqdm
-from rlf.algos.il.ddpm import MLPDiffusion
+import wandb
+import dm.ddpm_walker as ddpm_walker
+import dm.ddpm_fetch_norm as ddpm_fetch
+import dm.ddpm_hand as ddpm_hand
+# import dm.ddpm_hand_norm as ddpm_hand
 import math
 
-class Diff_il(BaseILAlgo):
+class Diff_bc(BaseILAlgo):
     """
     When used as a standalone updater, BC will perform a single update per call
     to update. The total number of udpates is # epochs * # batches in expert
@@ -40,11 +45,31 @@ class Diff_il(BaseILAlgo):
             self.norm_mean = None
             self.norm_var = None
         self.num_bc_updates = 0
-       
+        self.L1 = nn.L1Loss().cuda()
+        self.coeff = args.coeff
+        self.coeff_bc = args.coeff_bc
+        num_steps = 100
+        if args.env_name[:9] == 'FetchPick':
+            dim = 20
+            self.diff_model = ddpm_fetch.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
+        elif args.env_name[:9] == 'FetchPush':
+            dim = 19
+            self.diff_model = ddpm_fetch.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
+        elif args.env_name[:6] == 'Walker':
+            dim = 23
+            self.diff_model = ddpm_walker.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
+        elif args.env_name[:10] == 'CustomHand':
+            dim = 88
+            self.diff_model = ddpm_hand.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
+        weight_path = self.args.ddpm_path
+        self.diff_model.load_state_dict(torch.load(weight_path))
+        # data_stats = self.expert_dataset.get_expert_stats(self.args.device)
+        # self.state_stats = data_stats['state']
+        # self.action_stats = data_stats['action']
+
     # sample at any given time t, and calculate sampling loss
     def diffusion_loss_fn(self, model, x_0_pred, x_0_expert, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, n_steps):
         batch_size = x_0_pred.shape[0]
-        
         # generate eandom t for a batch data
         t = torch.randint(0,n_steps,size=(batch_size//2,))
         t = torch.cat([t,n_steps-1-t],dim=0) #[batch_size, 1]
@@ -58,11 +83,10 @@ class Diff_il(BaseILAlgo):
         
         # generate random noise eps
         e = torch.randn_like(x_0_pred).to(self.args.device)
-        e2 = torch.randn_like(x_0_expert).to(self.args.device)
         
         # model input
         x = x_0_pred*a + e*aml
-        x2 = x_0_expert*a + e2*aml
+        x2 = x_0_expert*a + e*aml
         
         # get predicted randome noise at time t
         output = model(x, t.squeeze(-1).to(self.args.device))
@@ -70,36 +94,27 @@ class Diff_il(BaseILAlgo):
         
         # calculate the loss between actual noise and predicted noise
         loss = (e - output).square().mean()
-        loss2 = (e2 - output2).square().mean()
-        
+        loss2 = (e - output2).square().mean()
         return loss, loss2
 
 
     def get_density(self, states, pred_action, expert_action):
-        num_steps = 100
-        dim = states.size()[1] + pred_action.size()[1]
-        model = MLPDiffusion(num_steps, input_dim = dim, device = self.args.device)
-        current_directory = os.path.dirname(os.path.abspath(__file__))
-        #weight_path = os.path.join(current_directory, 'ddpm.pt')
-        weight_path = self.args.ddpm_path
-        model.load_state_dict(torch.load(weight_path))
         # decide beta
+        num_steps = 100
         betas = torch.linspace(-6,6,num_steps)
         betas = torch.sigmoid(betas)*(0.5e-2 - 1e-5)+1e-5
         betas = betas.to(self.args.device)
-        # calculate alpha��alpha_prod��alpha_prod_previous��alpha_bar_sqrt
+        
         alphas = 1-betas
         alphas_prod = torch.cumprod(alphas,0).to(self.args.device)
         alphas_prod_p = torch.cat([torch.tensor([1]).float().to(self.args.device),alphas_prod[:-1]],0)
         alphas_bar_sqrt = torch.sqrt(alphas_prod)
         one_minus_alphas_bar_log = torch.log(1 - alphas_prod)
         one_minus_alphas_bar_sqrt = torch.sqrt(1 - alphas_prod)
-        num_steps = 100
         
         pred = torch.cat((states, pred_action), 1)
         expert = torch.cat((states, expert_action), 1)
-        pred_loss, expert_loss = self.diffusion_loss_fn(model, pred, expert, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, num_steps)
-        
+        pred_loss, expert_loss = self.diffusion_loss_fn(self.diff_model, pred, expert, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, num_steps) 
         return pred_loss, expert_loss
              
 
@@ -113,13 +128,15 @@ class Diff_il(BaseILAlgo):
     def _norm_state(self, x):
         obs_x = torch.clamp(
             (rutils.get_def_obs(x) - self.norm_mean)
-            / torch.pow(self.norm_var + 1e-8, 0.5),
+            / (torch.pow(self.norm_var, 0.5) + 1e-8),
             -10.0,
             10.0,
         )
         if isinstance(x, dict):
             x["observation"] = obs_x
-        return x
+            return x
+        else:
+            return obs_x
 
     def get_num_updates(self):
         if self.exp_generator is None:
@@ -162,7 +179,7 @@ class Diff_il(BaseILAlgo):
     def pre_update(self, cur_update):
         # Override the learning rate decay
         pass
-
+    
     def _bc_step(self, decay_lr):
         if decay_lr:
             super().pre_update(self.num_bc_updates)
@@ -172,37 +189,27 @@ class Diff_il(BaseILAlgo):
             expert_batch = self._get_next_data()
 
         states, true_actions = self._get_data(expert_batch)
-
+        
         log_dict = {}
         pred_actions, _, _ = self.policy(states, None, None)
         
         if rutils.is_discrete(self.policy.action_space):
             pred_label = rutils.get_ac_compact(self.policy.action_space, pred_actions)
-            acc = (pred_label == true_actions.long()).sum().float() / pred_label.shape[
-                0
-            ]
+            acc = (pred_label == true_actions.long()).sum().float() / pred_label.shape[0]
             log_dict["_pr_acc"] = acc.item()
-        loss = autils.compute_ac_loss(
+        loss = self.coeff_bc * autils.compute_ac_loss(
             pred_actions,
             true_actions.view(-1, self.action_dim),
             self.policy.action_space,
         )
         
         pred_loss, expert_loss = self.get_density(states, pred_actions, true_actions)
-        pred_density, expert_density = math.exp(-pred_loss), math.exp(-expert_loss)
-        #diff_loss = pred_loss - expert_loss
-        diff_loss = pred_loss
-        
-        total_loss = loss + 2*diff_loss
+        diff_loss = self.coeff*torch.clip((pred_loss - expert_loss), min=0)
+        total_loss = loss + diff_loss
+        # total_loss = diff_loss
 
         self._standard_step(total_loss) #backward
         self.num_bc_updates += 1
-        
-        #print("************************")
-        #print("pred_loss:", pred_loss.item())
-        #print("expert_loss:", expert_loss.item())
-        #print("pred_density:", pred_density)
-        #print("expert_density:", expert_density)
 
         val_loss = self._compute_val_loss()
         if val_loss is not None:
@@ -246,11 +253,8 @@ class Diff_il(BaseILAlgo):
                 action_losses.append(action_loss.item())
                 
                 pred_loss, expert_loss = self.get_density(states, pred_actions, true_actions)
-                pred_density, expert_density = math.exp(-pred_loss), math.exp(-expert_loss)
-                diff_loss = pred_loss - expert_loss
-                
+                diff_loss = (pred_loss - expert_loss)
                 diff_losses.append(diff_loss.item())
-
             return np.mean(action_losses + diff_losses)
 
     def update(self, storage):

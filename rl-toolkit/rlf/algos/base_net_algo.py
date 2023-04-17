@@ -1,6 +1,7 @@
 import rlf.algos.utils as autils
 import torch.nn as nn
 import torch.optim as optim
+import wandb
 from rlf.algos.base_algo import BaseAlgo
 from rlf.args import str2bool
 
@@ -69,10 +70,13 @@ class BaseNetAlgo(BaseAlgo):
 
     def _clip_grad(self, params):
         """
+        for i, p in enumerate(params):
+            grad = p.grad.mean()
+            wandb.log({f'grad_{i}': grad})
         Helper function to clip gradients
         """
         if self._arg("max_grad_norm") > 0:
-            nn.utils.clip_grad_norm_(params, self._arg("max_grad_norm"))
+            norm = nn.utils.clip_grad_norm_(params, self._arg("max_grad_norm"))
 
     def _standard_step(self, loss, optimizer_key="actor_opt"):
         """
@@ -117,7 +121,7 @@ class BaseNetAlgo(BaseAlgo):
         parser.add_argument(
             f"--{self.arg_prefix}eps",
             type=float,
-            default=1e-5,
+            default=1e-9,
             help="""
                             optimizer epsilon (default: 1e-5)
                             NOTE: The PyTorch default is 1e-8 see

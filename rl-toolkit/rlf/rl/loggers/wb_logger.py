@@ -110,12 +110,11 @@ class WbLogger(BaseLogger):
             group_id = self.prefix
         else:
             group_id = None
-
         self.run = wandb.init(
             project=self.wb_proj_name,
             name=self.prefix,
             entity=self.wb_entity,
-            group=group_id,
+            # group=group_id,
             reinit=True,
             config=args,
         )

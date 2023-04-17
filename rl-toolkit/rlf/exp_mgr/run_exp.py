@@ -30,6 +30,7 @@ def get_arg_parser():
     parser.add_argument("--seed", type=str, default=None)
     parser.add_argument(
         "--run-single",
+        default=True,
         action="store_true",
         help="""
             If true, will run all commands in a single pane sequentially.
@@ -37,14 +38,14 @@ def get_arg_parser():
     )
     parser.add_argument(
         "--cd",
-        default="-1",
+        default="1",
         type=str,
         help="""
             String of CUDA_VISIBLE_DEVICES. A value of "-1" will not set
             CUDA_VISIBLE_DEVICES at all.
             """,
     )
-    parser.add_argument("--cfg", type=str, default="./config.yaml")
+    parser.add_argument("--cfg", type=str, default="./goal_prox/config.yaml")
     parser.add_argument(
         "--debug",
         type=int,

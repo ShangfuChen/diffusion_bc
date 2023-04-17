@@ -38,9 +38,17 @@ class DDPG(ActorCriticUpdater):
 
 
     def _optimize(self, state, n_state, action, reward, add_info, n_add_info):
+        info = {}
+        for k, v in n_add_info.items():
+            if k == 'mask':
+                info['masks'] = v
+            else:
+                info[k] = v
+        n_add_info = info
         n_masks = n_add_info['masks']
         n_masks = n_masks.to(self.args.device)
-
+        import ipdb
+        ipdb.set_trace()
         # Get the Q-target
         n_action = self.target_policy(n_state, **n_add_info)
         next_q = self.target_policy.get_value(n_state, n_action, **n_add_info)

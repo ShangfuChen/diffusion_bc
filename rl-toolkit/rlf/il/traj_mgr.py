@@ -60,6 +60,8 @@ class TrajSaver(object):
         - obs (tensor[n_processes, *obs_dim])
         - done (list(bool)[n_processes])
         """
+        # import ipdb
+        # ipdb.set_trace()
         next_obs_cp = next_obs.clone()
         # Only count trajectories that satisfy the `self.should_save_traj` condition
         num_done = 0
@@ -87,7 +89,9 @@ class TrajSaver(object):
                 if isinstance(v, dict):
                     add_info(v, i)
                 elif k.startswith('ep_'):
-                    info_tensors[k][i] = v
+                    # import ipdb
+                    # ipdb.set_trace()
+                    info_tensors[k][i] = torch.Tensor([v])
 
         for i, info in enumerate(self.all_info):
             add_info(info, i)

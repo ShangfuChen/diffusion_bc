@@ -54,7 +54,9 @@ class BehavioralCloning(BaseILAlgo):
         )
         if isinstance(x, dict):
             x["observation"] = obs_x
-        return x
+            return x
+        else:
+            return obs_x
 
     def get_num_updates(self):
         if self.exp_generator is None:

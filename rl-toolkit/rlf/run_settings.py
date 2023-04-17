@@ -234,7 +234,7 @@ class RunSettings(MasterClass):
 
         # Setup algo
         algo.set_get_policy(self.get_policy, policy_args)
-        algo.init(policy, envs, args)
+        algo.init(policy, args)
         algo.set_env_ref(envs)
 
         # Setup storage buffer

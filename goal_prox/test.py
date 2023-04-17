@@ -7,9 +7,9 @@ from functools import partial
 import d4rl
 import torch.nn as nn
 from rlf import run_policy, evaluate_policy
-from rlf.algos import (GAIL, PPO, BaseAlgo, BehavioralCloning, Diff_il,
+from rlf.algos import (GAIL, Diff_gail, PPO, BaseAlgo, BehavioralCloning, Diff_bc,
                        BehavioralCloningFromObs, BehavioralCloningPretrain,
-                       GailDiscrim)
+                       GailDiscrim, Ae_bc)
 from rlf.algos.il.base_il import BaseILAlgo
 from rlf.algos.il.gaifo import GAIFO
 from rlf.algos.il.sqil import SQIL
@@ -112,6 +112,7 @@ def get_setup_dict():
     return {
         "gail": (GAIL(), get_ppo_policy),
         "gail-deep": (GAIL(), get_deep_ppo_policy),
+        "diff-gail": (Diff_gail(), get_deep_ppo_policy),
         "uncert-gail-deep": (UncertGAIL(), get_deep_ppo_policy),
         "uncert-gail": (UncertGAIL(), get_ppo_policy),
         "gaifo": (GAIFO(), get_ppo_policy),
@@ -122,7 +123,8 @@ def get_setup_dict():
         "action-replay": (BaseAlgo(), lambda env_name, _: ActionReplayPolicy()),
         "rnd": (BaseAlgo(), lambda env_name, _: RandomPolicy()),
         "bc": (BehavioralCloning(), partial(get_basic_policy, is_stoch=False)),
-        "diff-il": (Diff_il(), partial(get_basic_policy, is_stoch=False)),
+        "diff-bc": (Diff_bc(), partial(get_basic_policy, is_stoch=False)),
+        "ae-bc": (Ae_bc(), partial(get_basic_policy, is_stoch=False)),
         "bco": (BehavioralCloningFromObs(), partial(get_basic_policy, is_stoch=True)),
         "bc-deep": (BehavioralCloning(), get_deep_basic_policy),
         "dpf": (DiscountedProxIL(), get_ppo_policy),

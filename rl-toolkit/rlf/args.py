@@ -104,11 +104,21 @@ def add_args(parser):
         default=0.99,
         help="discount factor for rewards (default: 0.99)",
     )
+    parser.add_argument(
+        "--coeff",
+        type=float,
+        default=1.0,
+    )
+    parser.add_argument(
+        "--coeff-bc",
+        type=float,
+        default=1.0,
+    )
 
     parser.add_argument(
         "--use-proper-time-limits",
-        action="store_true",
-        default=False,
+        type=str2bool,
+        default=True,
         help="compute returns taking into account time limits",
     )
 

@@ -36,7 +36,7 @@ register(
 register(
     id='FetchPushEnvCustom-v0',
     entry_point='goal_prox.envs.fetch.custom_push:FetchPushEnvCustom',
-    max_episode_steps=60,
+    max_episode_steps=50,
     )
 
 register(

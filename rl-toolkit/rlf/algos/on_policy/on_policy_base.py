@@ -4,6 +4,9 @@ import torch
 import rlf.rl.utils as rutils
 
 class OnPolicy(BaseNetAlgo):
+    def __init__(self):
+        super().__init__()
+
     def get_storage_buffer(self, policy, envs, args):
         return RolloutStorage(args.num_steps, args.num_processes,
                               envs.observation_space, envs.action_space, args,
