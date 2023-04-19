@@ -4,11 +4,13 @@ sys.path.insert(0, "./")
 from functools import partial
 
 import d4rl
+import torch
 import torch.nn as nn
+import numpy as np
 from rlf import run_policy, evaluate_policy
-from rlf.algos import (GAIL, DDPG, PPO, BaseAlgo, BehavioralCloning, Diff_bc, DiffPolicy, 
-                       Ae_bc, BehavioralCloningFromObs, BehavioralCloningPretrain,
-                       GailDiscrim)
+from rlf.algos import (GAIL, DDPG, PPO, BaseAlgo, BehavioralCloning, Diff_bc, 
+                       DiffPolicy, Ae_bc, BehavioralCloningFromObs, BehavioralCloningPretrain,
+                       GailDiscrim, IBC)
 from rlf.algos.il.base_il import BaseILAlgo
 from rlf.algos.il.gaifo import GAIFO
 from rlf.algos.il.sqil import SQIL
@@ -25,6 +27,11 @@ from rlf.rl.loggers.wb_logger import (WbLogger, get_wb_ray_config,
                                       get_wb_ray_kwargs)
 from rlf.rl.model import CNNBase, MLPBase, MLPBasic, TwoLayerMlpWithAction
 from rlf.run_settings import RunSettings
+import dm.fetch_policy as fetch_policy
+import dm.hand_policy as hand_policy
+from ibc import dataset, models, optimizers, trainer, utils
+from ibc.trainer import ImplicitTrainState
+from ibc.experiment import Experiment
 
 import goal_prox.envs.ball_in_cup
 import goal_prox.envs.d4rl
@@ -42,8 +49,10 @@ from goal_prox.method.uncert_discrim import UncertGAIL
 from goal_prox.method.utils import trim_episodes_trans
 from goal_prox.models import GwImgEncoder
 from goal_prox.policies.grid_world_expert import GridWorldExpert
-
+from typing import Dict, Optional, Tuple
+from torch.utils.data import Dataset
 import time
+
 
 def get_ppo_policy(env_name, args):
     if env_name.startswith("MiniGrid") and args.gw_img:
@@ -100,6 +109,83 @@ def get_basic_policy(env_name, args, is_stoch):
 
     return BasicPolicy()
 
+def get_diffusion_policy(env_name, args, is_stoch):    
+    if env_name[:9] == 'FetchPush':
+        state_dim = 16
+        action_dim = 3
+        return fetch_policy.MLPDiffusion(
+            n_steps = 100,
+            action_dim=action_dim, 
+            state_dim=state_dim,
+            num_units=1100,
+            is_stoch=is_stoch,
+            # get_base_net_fn=lambda i_shape: MLPBasic(
+                # i_shape[0], hidden_size=1024, num_layers=4
+            )
+    if env_name[:9] == 'FetchPick':
+        state_dim = 16
+        action_dim = 4
+        return fetch_policy.MLPDiffusion(
+            n_steps = 100,
+            action_dim=action_dim, 
+            state_dim=state_dim,
+            num_units=1100,
+            is_stoch=is_stoch,
+            )
+    if env_name[:10] == 'CustomHand':
+        state_dim = 68
+        action_dim = 20
+        return hand_policy.MLPDiffusion(
+            n_steps = 100,
+            action_dim=action_dim, 
+            state_dim=state_dim,
+            num_units=2100,
+            is_stoch=is_stoch,
+            )
+
+
+def get_ibc_policy(env_name, args, is_stoch):
+    train_config = args
+    ##### config #####
+    if env_name[:9] == 'FetchPush':
+        state_dim = 16
+        action_dim = 3
+    if env_name[:9] == 'FetchPick':
+        state_dim = 16
+        action_dim = 4
+    if env_name[:10] == 'CustomHand':
+        state_dim = 68
+        action_dim = 20
+    input_dim = state_dim + action_dim
+    
+    mlp_config = models.MLPConfig(
+        input_dim = input_dim,
+        hidden_dim = 256,
+        output_dim = 1,
+        hidden_depth = 4,
+        # dropout_prob = args.dropout_prob,
+    )
+
+    optim_config = optimizers.OptimizerConfig(
+        learning_rate=train_config.lr,
+        weight_decay=train_config.weight_decay,
+    )
+
+    target_bounds = np.array([-np.ones(action_dim), np.ones(action_dim)])
+    stochastic_optim_config = optimizers.DerivativeFreeConfig(
+        bounds=target_bounds,
+        train_samples=train_config.stochastic_optimizer_train_samples,
+    )
+    
+    return ImplicitTrainState(
+        model_config=mlp_config,
+        optim_config=optim_config,
+        stochastic_optim_config=stochastic_optim_config,
+        is_stoch=is_stoch,
+        # get_base_net_fn=lambda i_shape: MLPBasic(
+            # i_shape[0], hidden_size=256, num_layers=2
+        # )
+    )
 
 def get_deep_basic_policy(env_name, args):
     return BasicPolicy(
@@ -122,8 +208,9 @@ def get_setup_dict():
         "action-replay": (BaseAlgo(), lambda env_name, _: ActionReplayPolicy()),
         "rnd": (BaseAlgo(), lambda env_name, _: RandomPolicy()),
         "bc": (BehavioralCloning(), partial(get_basic_policy, is_stoch=False)),
+        "ibc": (IBC(), partial(get_ibc_policy, is_stoch=False)),
         "diff-bc": (Diff_bc(), partial(get_basic_policy, is_stoch=False)),
-        "diff-policy": (DiffPolicy(), partial(get_basic_policy, is_stoch=False)),
+        "diff-policy": (DiffPolicy(), partial(get_diffusion_policy, is_stoch=False)),
         "ae-bc": (Ae_bc(), partial(get_basic_policy, is_stoch=False)),
         "bco": (BehavioralCloningFromObs(), partial(get_basic_policy, is_stoch=True)),
         "bc-deep": (BehavioralCloning(), get_deep_basic_policy),
@@ -173,6 +260,11 @@ class GoalProxSettings(RunSettings):
         # Should always be true!
         parser.add_argument("--gw-img", type=str2bool, default=True)
         parser.add_argument("--no-wb", action="store_true", default=False)
+        
+        # ibc args
+        parser.add_argument("--lr", type=float, default=0.0001)
+        parser.add_argument("--weight-decay", type=float, default=0.0)
+        parser.add_argument("--stochastic-optimizer-train_samples", type=int, default=64)
 
     def import_add(self):
         import goal_prox.envs.fetch
@@ -194,6 +286,4 @@ if __name__ == "__main__":
     run_policy(GoalProxSettings())
     end = time.time()
     print("The time used to execute this is:", end - start)
-    with open('execute_time.txt', 'w', encoding='utf-8') as f:
-        f.write("The time used to execute this is:{}".format(end - start))
     # evaluate_policy(GoalProxSettings())

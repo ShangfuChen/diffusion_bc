@@ -10,7 +10,7 @@ parameters:
   alg:
     value: "bc"
   traj-load-path:
-    value: "./expert_datasets/hand_v2.pt"
+    value: "./expert_datasets/hand_10000_v2.pt"
   env-name:
     value: "CustomHandManipulateBlockRotateZ-v2"
   normalize-env:
@@ -30,11 +30,11 @@ parameters:
   lr:
     value: 0.00005
   log-interval:
-    value: 500
+    value: 2000
   save-interval:
     value: 10000
   eval-interval:
-    value: 500
+    value: 2000
   bc-state-norm:
     value: True
   clip-actions:

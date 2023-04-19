@@ -3,3 +3,4 @@
 /expert_datasets
 /rl-toolkit/dm
 /rl-toolkit/vae
+*.pyc

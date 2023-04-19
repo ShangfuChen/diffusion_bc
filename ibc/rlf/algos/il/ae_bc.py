@@ -1,5 +1,4 @@
 import os
-#os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 import sys
 
 import copy
@@ -8,22 +7,29 @@ import numpy as np
 import rlf.algos.utils as autils
 import rlf.rl.utils as rutils
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from rlf.algos.il.base_il import BaseILAlgo
 from rlf.args import str2bool
 from rlf.storage.base_storage import BaseStorage
 from tqdm import tqdm
-import wandb
+from rlf.algos.il.density.vae.lib import SimpleVAE
 import math
 
-class DiffPolicy(BaseILAlgo):
+class Ae_bc(BaseILAlgo):
+    """
+    When used as a standalone updater, BC will perform a single update per call
+    to update. The total number of udpates is # epochs * # batches in expert
+    dataset. num-steps must be 0 and num-procs 1 as no experience should be collected in the
+    environment. To see the performance, you must evaluate. To just evaluate at
+    the end of training, set eval-interval to a large number that is greater
+    than the number of updates. There will always be a final evaluation.
+    """
 
     def __init__(self, set_arg_defs=True):
         super().__init__()
         self.set_arg_defs = set_arg_defs
 
-    def init(self, policy, args):
+    def init(self, policy, envs, args):
         super().init(policy, args)
         self.num_epochs = 0
         self.action_dim = rutils.get_ac_dim(self.policy.action_space)
@@ -34,11 +40,18 @@ class DiffPolicy(BaseILAlgo):
             self.norm_mean = None
             self.norm_var = None
         self.num_bc_updates = 0
-        self.L1 = nn.L1Loss().cuda()
-        self.lambda_bc = args.lambda_bc
-        self.lambda_dm = args.lambda_dm
+
+    def get_loss(self, states, pred_action, expert_action):
         num_steps = 100
-        dim = 2
+        dim = states.size()[1] + pred_action.size()[1]
+        model = SimpleVAE(in_channels=dim, latent_dim=512).to(self.args.device)
+        weight_path = self.args.ae_path
+        model.load_state_dict(torch.load(weight_path))
+        
+        pred = torch.cat((states, pred_action), 1)
+        expert = torch.cat((states, expert_action), 1)
+        pred_loss, expert_loss = model.get_loss(pred),  model.get_loss(expert)
+        return pred_loss, expert_loss 
 
     def get_env_settings(self, args):
         settings = super().get_env_settings(args)
@@ -50,15 +63,13 @@ class DiffPolicy(BaseILAlgo):
     def _norm_state(self, x):
         obs_x = torch.clamp(
             (rutils.get_def_obs(x) - self.norm_mean)
-            / (torch.pow(self.norm_var, 0.5) + 1e-8),
+            / torch.pow(self.norm_var + 1e-8, 0.5),
             -10.0,
             10.0,
         )
         if isinstance(x, dict):
             x["observation"] = obs_x
-            return x
-        else:
-            return obs_x
+        return x
 
     def get_num_updates(self):
         if self.exp_generator is None:
@@ -101,7 +112,7 @@ class DiffPolicy(BaseILAlgo):
     def pre_update(self, cur_update):
         # Override the learning rate decay
         pass
-    
+
     def _bc_step(self, decay_lr):
         if decay_lr:
             super().pre_update(self.num_bc_updates)
@@ -111,21 +122,38 @@ class DiffPolicy(BaseILAlgo):
             expert_batch = self._get_next_data()
 
         states, true_actions = self._get_data(expert_batch)
-        #noise_shape = true_actions.size()
-        
-        log_dict = {}
-        #pred_actions = self.policy.predict_action(noise_shape, states, self.args.device)
-        
-        pred_loss = self.policy.get_loss(true_actions, states)
 
-        self._standard_step(pred_loss) #backward
+        log_dict = {}
+        pred_actions, _, _ = self.policy(states, None, None)
+        
+        if rutils.is_discrete(self.policy.action_space):
+            pred_label = rutils.get_ac_compact(self.policy.action_space, pred_actions)
+            acc = (pred_label == true_actions.long()).sum().float() / pred_label.shape[
+                0
+            ]
+            log_dict["_pr_acc"] = acc.item()
+        loss = autils.compute_ac_loss(
+            pred_actions,
+            true_actions.view(-1, self.action_dim),
+            self.policy.action_space,
+        )
+        
+        pred_loss, expert_loss = self.get_loss(states, pred_actions, true_actions)
+        ae_loss = torch.clip(pred_loss - expert_loss, min=0)
+        #print("pred_loss:", pred_loss)
+        #print("expert_loss:", expert_loss)
+        
+        total_loss = loss + ae_loss
+
+        self._standard_step(total_loss) #backward
         self.num_bc_updates += 1
 
-        #val_loss = self._compute_val_loss()
-        #if val_loss is not None:
-        #    log_dict["_pr_val_loss"] = val_loss.item()
-        # 
-        log_dict["_pr_predict_loss"] = pred_loss.item()
+        val_loss = self._compute_val_loss()
+        if val_loss is not None:
+            log_dict["_pr_val_loss"] = val_loss.item()
+
+        log_dict["_pr_action_loss"] = loss.item()
+        log_dict["_pr_ae_loss"] = ae_loss.item()
         
         return log_dict
 
@@ -142,7 +170,7 @@ class DiffPolicy(BaseILAlgo):
         true_actions = batch["actions"].to(self.args.device)
         true_actions = self._adjust_action(true_actions)
         return states, true_actions
-    '''
+
     def _compute_val_loss(self):
         if self.update_i % self.args.eval_interval != 0:
             return None
@@ -150,10 +178,10 @@ class DiffPolicy(BaseILAlgo):
             return None
         with torch.no_grad():
             action_losses = []
-            diff_losses = []
+            ae_losses = []
             for batch in self.val_train_loader:
                 states, true_actions = self._get_data(batch)
-                pred_actions = self.policy.predict_action(true_actions.size(), states, self.args.device)
+                pred_actions, _, _ = self.policy(states, None, None)
                 action_loss = autils.compute_ac_loss(
                     pred_actions,
                     true_actions.view(-1, self.action_dim),
@@ -161,12 +189,14 @@ class DiffPolicy(BaseILAlgo):
                 )
                 action_losses.append(action_loss.item())
                 
-                pred_loss = self.get_loss(states, pred_actions)
-                pred_density = math.exp(-pred_loss)
-                diff_losses.append(pred_loss.item())
-            return np.mean(diff_losses)
-    '''
-    def update(self, storage):
+                pred_loss, expert_loss = self.get_loss(states, pred_actions, true_actions)
+                ae_loss = torch.clip(pred_loss - expert_loss, min=0)
+                
+                ae_losses.append(ae_loss.item())
+
+            return np.mean(action_losses + ae_losses)
+
+    def update(self, storage, t=1):
         top_log_vals = super().update(storage) #actor_opt_lr
         log_vals = self._bc_step(True) #_pr_action_loss
         log_vals.update(top_log_vals) #_pr_action_loss
@@ -202,5 +232,3 @@ class DiffPolicy(BaseILAlgo):
         parser.add_argument("--bc-num-epochs", type=int, default=1)
         parser.add_argument("--bc-state-norm", type=str2bool, default=False)
         parser.add_argument("--bc-noise", type=float, default=None)
-        parser.add_argument("--lambda-bc", type=float, default=1)
-        parser.add_argument("--lambda-dm", type=float, default=1)
