@@ -43,14 +43,16 @@ class MLP(nn.Module):
         else:
             layers = [
                 nn.Linear(config.input_dim, config.hidden_dim),
+                # nn.BatchNorm1d(config.hidden_dim),
+                # dropout_layer(),
                 config.activation_fn.value(),
-                dropout_layer(),
             ]
             for _ in range(config.hidden_depth - 1):
                 layers += [
                     nn.Linear(config.hidden_dim, config.hidden_dim),
+                    # nn.BatchNorm1d(config.hidden_dim),
+                    # dropout_layer(),
                     config.activation_fn.value(),
-                    dropout_layer(),
                 ]
             layers += [nn.Linear(config.hidden_dim, config.output_dim)]
         layers = [layer for layer in layers if not isinstance(layer, nn.Identity)]

@@ -121,7 +121,7 @@ class BaseNetAlgo(BaseAlgo):
         parser.add_argument(
             f"--{self.arg_prefix}eps",
             type=float,
-            default=1e-9,
+            default=1e-12,
             help="""
                             optimizer epsilon (default: 1e-5)
                             NOTE: The PyTorch default is 1e-8 see
@@ -136,7 +136,7 @@ class BaseNetAlgo(BaseAlgo):
         )
 
     @staticmethod
-    def _create_opt(module_to_opt: nn.Module, lr: float, eps: float = 1e-8):
+    def _create_opt(module_to_opt: nn.Module, lr: float, eps: float = 1e-12):
         get_params_fn = lambda: module_to_opt.parameters()
         return (optim.Adam(get_params_fn(), lr=lr, eps=eps), get_params_fn, lr)
 

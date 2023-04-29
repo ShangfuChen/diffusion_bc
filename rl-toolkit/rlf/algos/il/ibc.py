@@ -36,6 +36,7 @@ class IBC(BaseILAlgo):
         super().init(policy, args)
 
         self.num_epochs = 0
+        self.temperature = args.temperature
         self.action_dim = rutils.get_ac_dim(self.policy.action_space)
         if self.args.bc_state_norm:
             self.norm_mean = self.expert_stats["state"][0]
@@ -61,7 +62,9 @@ class IBC(BaseILAlgo):
         )
         if isinstance(x, dict):
             x["observation"] = obs_x
-        return x
+            return x
+        else:
+            return obs_x
 
     def get_num_updates(self):
         if self.exp_generator is None:
@@ -114,19 +117,17 @@ class IBC(BaseILAlgo):
 
         log_dict = {}
         states, true_actions = self._get_data(expert_batch)
-        input = states
-        target = true_actions
+        input = states # (B, S)
+        target = true_actions # (B, A)
 
-        # Generate N negatives, one for each element in the batch: (B, N, D).
+        # Generate N negatives, one for each element in the batch: (B, N, A).
         negatives = self.policy.stochastic_optimizer.sample(input.size(0), self.policy)
-
-        # Merge target and negatives: (B, N+1, D).
+        # Merge target and negatives: (B, N+1, A).
         targets = torch.cat([target.unsqueeze(dim=1), negatives], dim=1)
 
         # Generate a random permutation of the positives and negatives.
         permutation = torch.rand(targets.size(0), targets.size(1)).argsort(dim=1)
         targets = targets[torch.arange(targets.size(0)).unsqueeze(-1), permutation]
-
         # Get the original index of the positive. This will serve as the class label
         # for the loss.
         ground_truth = (permutation == 0).nonzero()[:, 1].to(self.args.device)
@@ -136,11 +137,13 @@ class IBC(BaseILAlgo):
         # output high energy values.
         # import ipdb; ipdb.set_trace()
         energy = self.policy.model(input, targets)
-
         # Interpreting the energy as a negative logit, we can apply a cross entropy loss
         # to train the EBM.
         logits = -1.0 * energy
-        loss = F.cross_entropy(logits, ground_truth)
+        ### Add temperature for info NCE ###
+        temperature = self.temperature
+        # softmax_logits = F.softmax(logits/temperature, dim=-1)
+        loss = F.cross_entropy(logits/temperature, ground_truth)
         self._standard_step(loss)
         self.num_bc_updates += 1
 
@@ -216,4 +219,5 @@ class IBC(BaseILAlgo):
         parser.add_argument("--bc-num-epochs", type=int, default=1)
         parser.add_argument("--bc-state-norm", type=str2bool, default=False)
         parser.add_argument("--bc-noise", type=float, default=None)
+        parser.add_argument("--temperature", type=float, default=1)
         

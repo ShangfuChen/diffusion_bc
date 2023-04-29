@@ -103,7 +103,9 @@ def get_basic_policy(env_name, args, is_stoch):
         return BasicPolicy(
             is_stoch=is_stoch,
             get_base_net_fn=lambda i_shape: MLPBasic(
-                i_shape[0], hidden_size=256, num_layers=2
+                i_shape[0],
+                hidden_size=args.hidden_dim,
+                num_layers=args.depth
             ),
         )
 
@@ -150,22 +152,27 @@ def get_ibc_policy(env_name, args, is_stoch):
     if env_name[:9] == 'FetchPush':
         state_dim = 16
         action_dim = 3
+        hidden_dim = args.hidden_dim
+        depth = args.depth
     if env_name[:9] == 'FetchPick':
         state_dim = 16
         action_dim = 4
+        hidden_dim = args.hidden_dim
+        depth = args.depth
     if env_name[:10] == 'CustomHand':
         state_dim = 68
         action_dim = 20
+        hidden_dim = args.hidden_dim
+        depth = args.depth
     input_dim = state_dim + action_dim
     
     mlp_config = models.MLPConfig(
         input_dim = input_dim,
-        hidden_dim = 256,
+        hidden_dim = hidden_dim,
         output_dim = 1,
-        hidden_depth = 4,
-        # dropout_prob = args.dropout_prob,
+        hidden_depth = depth,
+        dropout_prob = 0,
     )
-
     optim_config = optimizers.OptimizerConfig(
         learning_rate=train_config.lr,
         weight_decay=train_config.weight_decay,
@@ -263,6 +270,8 @@ class GoalProxSettings(RunSettings):
         
         # ibc args
         parser.add_argument("--lr", type=float, default=0.0001)
+        parser.add_argument("--hidden-dim", type=int, default=256)
+        parser.add_argument("--depth", type=int, default=2)
         parser.add_argument("--weight-decay", type=float, default=0.0)
         parser.add_argument("--stochastic-optimizer-train_samples", type=int, default=64)
 

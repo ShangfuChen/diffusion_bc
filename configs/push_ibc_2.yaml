@@ -7,46 +7,49 @@ parameters:
     #values: [1, 2, 3]
     value: 1
   prefix:
-    value: "diff-bc"
+    value: "ibc"
   alg:
-    value: "diff-bc"
+    value: "ibc"
   traj-load-path:
-    value: "./expert_datasets/hand_10000_v2.pt"
-  ddpm-path:
-    value: "./rl-toolkit/dm/hand_10000_v2_ddpm.pt"
+    value: "./expert_datasets/push_10000_clip.pt"
   env-name:
-    value: "CustomHandManipulateBlockRotateZ-v2"
-  coeff:
-    values: [0.1]
-  coeff-bc:
-    value: 1
+    value: "FetchPushEnvCustom-v0"
   normalize-env:
     value: False
   bc-num-epochs:
     value: 5000
   eval-num-processes:
-    value: 1
+    value: 10
   cuda:
     value: True
+  num-process:
+    value: 10
   num-render:
-    value: 1
+    value: 0
+  #vid-fps:
+    #value: 30
   num-eval:
-    value: 100
-  vid-fps:
-    value: 100
+    value: 10
   lr:
-    values: [0.0001]
+    #values: [0.000002, 0.000005]
+    value: 0.000001
   log-interval:
-    value: 2000
+    value: 1000
   save-interval:
-    value: 10000
+    value: 50000
   eval-interval:
     value: 2000
   bc-state-norm:
     value: True
   clip-actions:
     value: True
+  stochastic-optimizer-train_samples:
+    value: 256
+  traj-batch-size:
+    value: 512
   hidden-dim:
     values: [256, 512, 1024]
   depth:
     values: [1, 2]
+  max-grad-norm:
+    value: -1

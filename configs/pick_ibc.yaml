@@ -5,10 +5,11 @@ method: grid
 parameters:
   seed:
     values: [1, 2, 3]
+    #value: 1
   prefix:
-    value: "bc"
+    value: "ibc"
   alg:
-    value: "bc"
+    value: "ibc"
   traj-load-path:
     value: "./expert_datasets/pick_10000_clip.pt"
   env-name:
@@ -16,35 +17,34 @@ parameters:
   normalize-env:
     value: False
   bc-num-epochs:
-    value: 5000
+    value: 15000
   eval-num-processes:
-    value: 1
+    value: 10
   cuda:
     value: True
+  num-process:
+    value: 10
   num-render:
-    value: 1
+    value: 0
   num-eval:
-    value: 100
-  vid-fps:
-    value: 100
+    value: 10
   lr:
-    #values: [0.00001, 0.00002, 0.00005]
-    value: 0.00001
+    value: 0.000005
   log-interval:
-    value: 2000
+    value: 1000
   save-interval:
-    value: 100000
+    value: 50000
   eval-interval:
-    value: 2000
+    value: 4000
   bc-state-norm:
     value: True
   clip-actions:
     value: True
+  stochastic-optimizer-train_samples:
+    value: 256
   traj-batch-size:
-    value: 128
+    value: 512
   hidden-dim:
     value: 1024
   depth:
     value: 1
-  max-grad-norm:
-    value: -1

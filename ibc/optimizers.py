@@ -62,7 +62,7 @@ class DerivativeFreeConfig(StochasticOptimizerConfig):
     noise_shrink: float = 0.5
     iters: int = 3
     train_samples: int = 256
-    #inference_samples: int = 2 ** 14
+    # inference_samples: int = 2 ** 14
     inference_samples: int = 1000
 
 
@@ -122,7 +122,6 @@ class DerivativeFreeOptimizer:
             # Resample with replacement.
             idxs = torch.multinomial(probs, self.inference_samples, replacement=True)
             samples = samples[torch.arange(samples.size(0)).unsqueeze(-1), idxs]
-
             # Add noise and clip to target bounds.
             samples = samples + torch.randn_like(samples) * noise_scale
             samples = samples.clamp(min=bounds[0, :], max=bounds[1, :])
