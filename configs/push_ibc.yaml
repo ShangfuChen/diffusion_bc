@@ -4,8 +4,8 @@ method: grid
 
 parameters:
   seed:
-    #values: [1, 2, 3]
-    value: 1
+    values: [1, 2, 3]
+    #value: 1
   prefix:
     value: "ibc"
   alg:
@@ -17,7 +17,7 @@ parameters:
   normalize-env:
     value: False
   bc-num-epochs:
-    value: 5000
+    value: 15000
   eval-num-processes:
     value: 10
   cuda:
@@ -31,8 +31,7 @@ parameters:
   num-eval:
     value: 10
   lr:
-    #values: [0.000002, 0.000005]
-    value: 0.000005
+    value: 0.0000005
   log-interval:
     value: 1000
   save-interval:

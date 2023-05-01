@@ -4,8 +4,8 @@ method: grid
 
 parameters:
   seed:
-    #values: [1, 2, 3]
-    value: 1
+    values: [1, 2, 3]
+    #value: 1
   prefix:
     value: "ibc"
   alg:
@@ -17,7 +17,7 @@ parameters:
   normalize-env:
     value: False
   bc-num-epochs:
-    value: 5000
+    value: 15000
   eval-num-processes:
     value: 10
   cuda:
@@ -29,13 +29,13 @@ parameters:
   num-eval:
     value: 10
   lr:
-    value: 0.0001
+    value: 0.0000001
   log-interval:
-    value: 2000
+    value: 1000
   save-interval:
-    value: 50000
+    value: 500000
   eval-interval:
-    value: 4000
+    value: 3000
   bc-state-norm:
     value: True
   clip-actions:
@@ -45,6 +45,6 @@ parameters:
   traj-batch-size:
     value: 512
   hidden-dim:
-    values: [256, 1024]
+    values: [1024]
   depth:
-    values: [1, 2]
+    values: [2]

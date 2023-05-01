@@ -14,28 +14,28 @@ parameters:
   ddpm-path:
     value: "./rl-toolkit/dm/push_10000_clip_norm_ddpm.pt"
   coeff:
-    value: 1
-    #value: 0.2
+    #value: 1
+    value: 0.2
   coeff-bc:
-    value: 0
+    value: 1
   env-name:
     value: "FetchPushEnvCustom-v0"
   normalize-env:
     value: False
   bc-num-epochs:
-    value: 4000
+    value: 5000
   eval-num-processes:
-    value: 1
+    value: 10
   cuda:
     value: True
   num-render:
     value: 1
   num-eval:
-    value: 100
+    value: 10
   vid-fps:
     value: 100
   lr:
-    value: 0.000001
+    value: 0.00001
   log-interval:
     value: 2000
   save-interval:
@@ -46,3 +46,9 @@ parameters:
     value: True
   clip-actions:
     value: True
+  hidden-dim:
+    value: 1024
+  depth:
+    value: 1
+  max-grad-norm:
+    value: -1

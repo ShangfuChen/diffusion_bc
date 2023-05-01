@@ -217,7 +217,7 @@ class IBC(BaseILAlgo):
         #########################################
         # New args
         parser.add_argument("--bc-num-epochs", type=int, default=1)
-        parser.add_argument("--bc-state-norm", type=str2bool, default=False)
+        parser.add_argument("--bc-state-norm", type=str2bool, default=True)
         parser.add_argument("--bc-noise", type=float, default=None)
         parser.add_argument("--temperature", type=float, default=1)
         

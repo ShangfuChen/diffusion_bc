@@ -131,7 +131,8 @@ def get_diffusion_policy(env_name, args, is_stoch):
             n_steps = 100,
             action_dim=action_dim, 
             state_dim=state_dim,
-            num_units=1100,
+            num_units=args.hidden_dim,
+            depth=args.depth,
             is_stoch=is_stoch,
             )
     if env_name[:10] == 'CustomHand':

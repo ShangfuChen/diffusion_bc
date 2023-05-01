@@ -18,24 +18,28 @@ parameters:
   bc-num-epochs:
     value: 5000
   eval-num-processes:
-    value: 1
+    value: 10
   cuda:
     value: True
   num-render:
     value: 1
   num-eval:
-    value: 100
+    value: 10
   vid-fps:
     value: 100
   lr:
-    value: 0.00005
+    value: 0.000005
   log-interval:
-    value: 2000
+    value: 1000
   save-interval:
-    value: 10000
+    value: 100000
   eval-interval:
-    value: 2000
+    value: 3000
   bc-state-norm:
     value: True
   clip-actions:
     value: True
+  hidden-dim:
+    value: 1024
+  depth:
+    value: 2

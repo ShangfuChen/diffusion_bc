@@ -16,7 +16,7 @@ parameters:
   normalize-env:
     value: False
   bc-num-epochs:
-    value: 14000
+    value: 15000
   eval-num-processes:
     value: 10
   cuda:
@@ -28,15 +28,16 @@ parameters:
   num-eval:
     value: 10
   lr:
-    #values: [0.00002, 0.00005, 0.0001]
-    value: 0.00002
+    value: 0.000002
   log-interval:
-    value: 2000
+    value: 3000
   save-interval:
     value: 500000
   eval-interval:
-    value: 20000
+    value: 9000
   bc-state-norm:
     value: True
   clip-actions:
     value: True
+  traj-batch-size:
+    value: 128
