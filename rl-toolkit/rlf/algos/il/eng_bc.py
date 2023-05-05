@@ -14,14 +14,10 @@ from rlf.args import str2bool
 from rlf.storage.base_storage import BaseStorage
 from tqdm import tqdm
 import wandb
-import dm.ddpm_walker as ddpm_walker
-import dm.ddpm_fetch_norm as ddpm_fetch
-import dm.ddpm_hand as ddpm_hand
-import dm.ddpm_toy as ddpm_toy
-# import dm.ddpm_hand_norm as ddpm_hand
 import math
+from eng_model as EngModel
 
-class Diff_bc(BaseILAlgo):
+class Eng_bc(BaseILAlgo):
     """
     When used as a standalone updater, BC will perform a single update per call
     to update. The total number of udpates is # epochs * # batches in expert
@@ -50,77 +46,14 @@ class Diff_bc(BaseILAlgo):
         self.coeff = args.coeff
         self.coeff_bc = args.coeff_bc
         num_steps = 100
-        if args.env_name[:9] == 'FetchPick':
-            dim = 20
-            self.diff_model = ddpm_fetch.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
-        elif args.env_name[:9] == 'FetchPush':
-            dim = 19
-            self.diff_model = ddpm_fetch.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
-        elif args.env_name[:6] == 'Walker':
-            dim = 23
-            self.diff_model = ddpm_walker.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
-        elif args.env_name[:10] == 'CustomHand':
-            dim = 88
-            self.diff_model = ddpm_hand.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
-        elif args.env_name[:4] == 'maze':
-            dim = 8
-            self.diff_model = ddpm_toy.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
-        weight_path = self.args.ddpm_path
-        self.diff_model.load_state_dict(torch.load(weight_path))
-        # data_stats = self.expert_dataset.get_expert_stats(self.args.device)
-        # self.state_stats = data_stats['state']
-        # self.action_stats = data_stats['action']
-
-    # sample at any given time t, and calculate sampling loss
-    def diffusion_loss_fn(self, model, x_0_pred, x_0_expert, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, n_steps):
-        batch_size = x_0_pred.shape[0]
-        # generate eandom t for a batch data
-        t = torch.randint(0,n_steps,size=(batch_size//2,))
-        t = torch.cat([t,n_steps-1-t],dim=0) #[batch_size, 1]
-        t = t.unsqueeze(-1)
-        
-        # coefficient of x0
-        a = alphas_bar_sqrt[t].to(self.args.device)
-        
-        # coefficient of eps
-        aml = one_minus_alphas_bar_sqrt[t].to(self.args.device)
-        
-        # generate random noise eps
-        e = torch.randn_like(x_0_pred).to(self.args.device)
-        
-        # model input
-        x = x_0_pred*a + e*aml
-        x2 = x_0_expert*a + e*aml
-        
-        # get predicted randome noise at time t
-        output = model(x, t.squeeze(-1).to(self.args.device))
-        output2 = model(x2, t.squeeze(-1).to(self.args.device))
-        
-        # calculate the loss between actual noise and predicted noise
-        loss = (e - output).square().mean()
-        loss2 = (e - output2).square().mean()
-        return loss, loss2
+        dim = 8
+        self.eng_model = EngModel().to(self.args.device)
+        self.eng_model.load_state_dict(torch.load(args.model_path))
 
 
-    def get_density(self, states, pred_action, expert_action):
-        # decide beta
-        num_steps = 100
-        betas = torch.linspace(-6,6,num_steps)
-        betas = torch.sigmoid(betas)*(0.5e-2 - 1e-5)+1e-5
-        betas = betas.to(self.args.device)
-        
-        alphas = 1-betas
-        alphas_prod = torch.cumprod(alphas,0).to(self.args.device)
-        alphas_prod_p = torch.cat([torch.tensor([1]).float().to(self.args.device),alphas_prod[:-1]],0)
-        alphas_bar_sqrt = torch.sqrt(alphas_prod)
-        one_minus_alphas_bar_log = torch.log(1 - alphas_prod)
-        one_minus_alphas_bar_sqrt = torch.sqrt(1 - alphas_prod)
-        
-        pred = torch.cat((states, pred_action), 1)
-        expert = torch.cat((states, expert_action), 1)
-        pred_loss, expert_loss = self.diffusion_loss_fn(self.diff_model, pred, expert, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, num_steps) 
-        return pred_loss, expert_loss
-             
+    def get_eng_loss(self, states, action):
+        energy = -self.model(states, action)
+        return energy
 
     def get_env_settings(self, args):
         settings = super().get_env_settings(args)
@@ -156,29 +89,15 @@ class Diff_bc(BaseILAlgo):
         self.num_epochs += 1
 
     def full_train(self, update_iter=0):
-        action_loss = []
-        diff_loss = []
         prev_num = 0
-
         # First BC
         with tqdm(total=self.args.bc_num_epochs) as pbar:
             while self.num_epochs < self.args.bc_num_epochs:
                 super().pre_update(self.num_bc_updates)
                 log_vals = self._bc_step(False)
-                action_loss.append(log_vals["_pr_action_loss"])
-                diff_loss.append(log_vals["_pr_diff_loss"])
-
                 pbar.update(self.num_epochs - prev_num)
                 prev_num = self.num_epochs
 
-        rutils.plot_line(
-            action_loss,
-            f"action_loss_{update_iter}.png",
-            self.args.vid_dir,
-            not self.args.no_wb,
-            self.get_completed_update_steps(self.update_i),
-        )
-        self.num_epochs = 0
 
     def pre_update(self, cur_update):
         # Override the learning rate decay
@@ -193,7 +112,7 @@ class Diff_bc(BaseILAlgo):
             expert_batch = self._get_next_data()
 
         states, true_actions = self._get_data(expert_batch)
-        
+
         log_dict = {}
         pred_actions, _, _ = self.policy(states, None, None)
         
@@ -206,23 +125,14 @@ class Diff_bc(BaseILAlgo):
             true_actions.view(-1, self.action_dim),
             self.policy.action_space,
         )
-        
-        pred_loss, expert_loss = self.get_density(states, pred_actions, true_actions)
-        diff_loss = self.coeff*torch.clip((pred_loss - expert_loss), min=0)
-        total_loss = loss + diff_loss
-        # total_loss = diff_loss
-
+        eng_loss = self.coeff*self.get_eng_loss(states, pred_actions)
+        total_loss = loss + eng_loss
         self._standard_step(total_loss) #backward
         self.num_bc_updates += 1
-
-        val_loss = self._compute_val_loss()
-        if val_loss is not None:
-            log_dict["_pr_val_loss"] = val_loss.item()
-
-        log_dict["_pr_action_loss"] = loss.item()
-        log_dict["_pr_diff_loss"] = diff_loss.item()
-        
+        log_dict["action_loss"] = loss.item()
+        log_dict["eng_loss"] = diff_loss.item()
         return log_dict
+
 
     def _get_data(self, batch):
         states = batch["state"].to(self.args.device)
@@ -297,3 +207,4 @@ class Diff_bc(BaseILAlgo):
         parser.add_argument("--bc-num-epochs", type=int, default=1)
         parser.add_argument("--bc-state-norm", type=str2bool, default=False)
         parser.add_argument("--bc-noise", type=float, default=None)
+        parser.add_argument("--model-path", type=str, default=None)

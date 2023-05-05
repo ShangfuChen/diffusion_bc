@@ -163,7 +163,7 @@ register(
 register(
     id='maze2d-open-dense-v0',
     entry_point='d4rl.pointmaze:MazeEnv',
-    max_episode_steps=150,
+    max_episode_steps=300,
     kwargs={
         'maze_spec':OPEN,
         'reward_type':'dense',

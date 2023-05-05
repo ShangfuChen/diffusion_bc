@@ -4,3 +4,5 @@
 /rl-toolkit/dm
 /rl-toolkit/vae
 *.pyc
+*.mp4
+*.png

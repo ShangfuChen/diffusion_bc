@@ -47,7 +47,6 @@ class MLPConfig:
     activation_fn: ActivationType = ActivationType.RELU
 
 class ImplicitTrainState(BasicPolicy, nn.Module):
-
     def __init__(self, 
             model_config: models.MLPConfig,
             optim_config: optimizers.OptimizerConfig,
@@ -60,8 +59,9 @@ class ImplicitTrainState(BasicPolicy, nn.Module):
         super().__init__()
         
         device = 'cuda'
-        self.model = models.PolicyMLP(config=model_config)
-
+        self.steps = 0
+        self.model = models.PolicyMLP(config=model_config).cuda()
+        
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),
             lr = optim_config.learning_rate,
@@ -84,7 +84,7 @@ class ImplicitTrainState(BasicPolicy, nn.Module):
         self.action_space = action_space
         self.obs_space = obs_space
         self.args = args
-        
+
         if 'recurrent' in inspect.getfullargspec(self.get_base_net_fn).args:
             self.get_base_net_fn = partial(self.get_base_net_fn,
                     recurrent=self.args.recurrent_policy)
@@ -120,9 +120,8 @@ class ImplicitTrainState(BasicPolicy, nn.Module):
     ) -> experiment.TensorboardLogData:
         self.model.train()
 
-        input = input.to(self.device)
-        target = target.to(self.device)
-
+        input = input.cuda()
+        target = target.cuda()
         # Generate N negatives, one for each element in the batch: (B, N, D).
         negatives = self.stochastic_optimizer.sample(input.size(0), self.model)
 
@@ -135,7 +134,7 @@ class ImplicitTrainState(BasicPolicy, nn.Module):
 
         # Get the original index of the positive. This will serve as the class label
         # for the loss.
-        ground_truth = (permutation == 0).nonzero()[:, 1].to(self.device)
+        ground_truth = (permutation == 0).nonzero()[:, 1].cuda()
 
         # For every element in the mini-batch, there is 1 positive for which the EBM
         # should output a low energy value, and N negatives for which the EBM should
@@ -185,6 +184,5 @@ class ImplicitTrainState(BasicPolicy, nn.Module):
         return self.stochastic_optimizer.infer(input.to(self.device), self.model)
     
 class PolicyType(enum.Enum):
-
     IMPLICIT = ImplicitTrainState
     """An implicit policy is a conditional EBM trained with an InfoNCE objective."""

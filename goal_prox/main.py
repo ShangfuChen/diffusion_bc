@@ -184,15 +184,11 @@ def get_ibc_policy(env_name, args, is_stoch):
         bounds=target_bounds,
         train_samples=train_config.stochastic_optimizer_train_samples,
     )
-    
     return ImplicitTrainState(
         model_config=mlp_config,
         optim_config=optim_config,
         stochastic_optim_config=stochastic_optim_config,
         is_stoch=is_stoch,
-        # get_base_net_fn=lambda i_shape: MLPBasic(
-            # i_shape[0], hidden_size=256, num_layers=2
-        # )
     )
 
 def get_deep_basic_policy(env_name, args):
@@ -217,6 +213,7 @@ def get_setup_dict():
         "rnd": (BaseAlgo(), lambda env_name, _: RandomPolicy()),
         "bc": (BehavioralCloning(), partial(get_basic_policy, is_stoch=False)),
         "ibc": (IBC(), partial(get_ibc_policy, is_stoch=False)),
+        # "eng-bc": (Eng_bc(), partial(get_basic_policy, is_stoch=False)),
         "diff-bc": (Diff_bc(), partial(get_basic_policy, is_stoch=False)),
         "diff-policy": (DiffPolicy(), partial(get_diffusion_policy, is_stoch=False)),
         "ae-bc": (Ae_bc(), partial(get_basic_policy, is_stoch=False)),

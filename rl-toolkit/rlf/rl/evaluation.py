@@ -101,7 +101,6 @@ def full_eval(
     )
     args.evaluation_mode = False
     envs.close()
-
     return ret_info, goal_achieved, eval_step_list
 
 
@@ -225,20 +224,19 @@ def evaluate(
         # Observe reward and next obs
         next_obs, _, done, infos = eval_envs.step(ac_info.take_action)
         if args.eval_save:
+            # import ipdb
+            # ipdb.set_trace()
+            # finished_count = traj_saver.collect(
+                # obs['observation'], next_obs['observation'], done, ac_info.take_action, infos
+            # )
             finished_count = traj_saver.collect(
-                obs['observation'], next_obs['observation'], done, ac_info.take_action, infos
+                obs, next_obs, done, ac_info.take_action, infos
             )
         else:
             finished_count = sum([int(d) for d in done])
 
         pbar.update(finished_count)
         evaluated_episode_count += finished_count
-        # for info in infos:
-            # if evaluated_episode_count >= total_num_eval:
-                # break
-            # if 'episode' in info.keys():
-                # evaluated_episode_count += 1  
-                # pbar.update(1)
 
         cur_frame = None
         eval_masks = torch.tensor(
@@ -269,14 +267,12 @@ def evaluate(
         
         for k, v in step_log_vals.items():
             ep_stats[k].extend(v)
-        
     pbar.close()
     info = {}
     if args.eval_save:
         traj_saver.save()
 
     ret_info = {}
-
     print("Evaluation using %i episodes:" % len(ep_stats["r"]))
     for k, v in ep_stats.items():
         print(" - %s: %.5f" % (k, np.mean(v)))

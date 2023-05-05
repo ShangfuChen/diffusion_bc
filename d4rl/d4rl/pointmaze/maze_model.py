@@ -174,7 +174,15 @@ U_MAZE = "#####\\" + "#GOO#\\" + "###O#\\" + "#OOO#\\" + "#####"
 
 U_MAZE_EVAL = "#####\\" + "#OOG#\\" + "#O###\\" + "#OOO#\\" + "#####"
 
-OPEN = "#######\\" + "#OOOOO#\\" + "#OOGOO#\\" + "#OOOOO#\\" + "#######"
+OPEN = (
+    "#######\\"
+  + "#OOOOG#\\"
+  + "#OOOOO#\\"
+  + "#OOOOO#\\"
+  + "#OOOOO#\\"
+  + "#OOOOO#\\"
+  + "#######"
+)
 
 
 class MazeEnv(mujoco_env.MujocoEnv, utils.EzPickle, offline_env.OfflineEnv):
@@ -193,9 +201,6 @@ class MazeEnv(mujoco_env.MujocoEnv, utils.EzPickle, offline_env.OfflineEnv):
         self._target = np.array([0.0, 0.0])
 
         model = point_maze(maze_spec)
-        with model.asfile() as f:
-            mujoco_env.MujocoEnv.__init__(self, model_path=f.name, frame_skip=1)
-        utils.EzPickle.__init__(self)
 
         # Set the default goal (overriden by a call to set_target)
         # Try to find a goal if it exists
@@ -209,12 +214,19 @@ class MazeEnv(mujoco_env.MujocoEnv, utils.EzPickle, offline_env.OfflineEnv):
             self.set_target(
                 np.array(self.reset_locations[0]).astype(self.observation_space.dtype)
             )
-        self.empty_and_goal_locations = self.reset_locations + self.goal_locations
+        # self.empty_and_goal_locations = self.reset_locations + self.goal_locations
+        self.empty_and_goal_locations = [(5, 1)]
 
         # For different coverages
         self._initial_locations = self._target_locations = self.empty_and_goal_locations
         self.set_coverage(1.0)
-        self.set_noise_ratio(1.0, 1.0)
+        self.set_noise_ratio(1.0, 0)
+        with model.asfile() as f:
+            mujoco_env.MujocoEnv.__init__(self, model_path=f.name, frame_skip=1)
+        utils.EzPickle.__init__(self)
+        # self.set_noise_ratio(1.0, 1.0)
+        # import ipdb
+        # ipdb.set_trace()
 
     def step(self, action):
         action = np.clip(action, -1.0, 1.0)
@@ -223,16 +235,19 @@ class MazeEnv(mujoco_env.MujocoEnv, utils.EzPickle, offline_env.OfflineEnv):
         self.set_marker()
         ob = self._get_obs()
         if self.reward_type == "sparse":
-            reward = 1.0 if np.linalg.norm(ob[0:2] - self._target) <= 0.5 else 0.0
+            reward = 1.0 if np.linalg.norm(ob[0:2] - self._target) <= 0.1 else 0.0
         elif self.reward_type == "dense":
             reward = np.exp(-np.linalg.norm(ob[0:2] - self._target))
         else:
             raise ValueError("Unknown reward type %s" % self.reward_type)
-        done = False
+        # done = False
 
         # Add goal_achieved to info dict
-        goal_achieved = True if np.linalg.norm(ob[0:2] - self._target) <= 0.5 else False
-
+        goal_achieved = True if np.linalg.norm(ob[0:2] - self._target) <= 0.3 else False
+        x = ob[0]
+        y = ob[1]
+        fall = (x > 1.3) and (y > 1.3)
+        done = goal_achieved or fall
         return ob, reward, done, dict(goal_achieved=goal_achieved)
 
     def _get_obs(self):
