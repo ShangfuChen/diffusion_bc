@@ -41,7 +41,8 @@ class Diff_bc(BaseILAlgo):
         self.action_dim = rutils.get_ac_dim(self.policy.action_space)
         if self.args.bc_state_norm:
             self.norm_mean = self.expert_stats["state"][0]
-            self.norm_var = torch.pow(self.expert_stats["state"][1], 2)
+            # self.norm_var = torch.pow(self.expert_stats["state"][1], 2)
+            self.norm_std = self.expert_stats["state"][1]
         else:
             self.norm_mean = None
             self.norm_var = None
@@ -91,7 +92,7 @@ class Diff_bc(BaseILAlgo):
         # model input
         x = x_0_pred*a + e*aml
         x2 = x_0_expert*a + e*aml
-        
+
         # get predicted randome noise at time t
         output = model(x, t.squeeze(-1).to(self.args.device))
         output2 = model(x2, t.squeeze(-1).to(self.args.device))
@@ -132,10 +133,11 @@ class Diff_bc(BaseILAlgo):
     def _norm_state(self, x):
         obs_x = torch.clamp(
             (rutils.get_def_obs(x) - self.norm_mean)
-            / (torch.pow(self.norm_var, 0.5) + 1e-8),
+            / (self.norm_std + 1e-8),
             -10.0,
             10.0,
         )
+        obs_x = obs_x*(self.norm_std != 0)
         if isinstance(x, dict):
             x["observation"] = obs_x
             return x
@@ -206,9 +208,9 @@ class Diff_bc(BaseILAlgo):
             true_actions.view(-1, self.action_dim),
             self.policy.action_space,
         )
-        
         pred_loss, expert_loss = self.get_density(states, pred_actions, true_actions)
         diff_loss = self.coeff*torch.clip((pred_loss - expert_loss), min=0)
+        # diff_loss = self.coeff*pred_loss
         total_loss = loss + diff_loss
         # total_loss = diff_loss
 
@@ -221,7 +223,9 @@ class Diff_bc(BaseILAlgo):
 
         log_dict["_pr_action_loss"] = loss.item()
         log_dict["_pr_diff_loss"] = diff_loss.item()
-        
+        log_dict["pred_loss"] = pred_loss.item()
+        log_dict["expert_loss"] = expert_loss.item()
+
         return log_dict
 
     def _get_data(self, batch):

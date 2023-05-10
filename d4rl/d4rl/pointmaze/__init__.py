@@ -1,4 +1,5 @@
 from .maze_model import MazeEnv, OPEN, U_MAZE, MEDIUM_MAZE, LARGE_MAZE, U_MAZE_EVAL, MEDIUM_MAZE_EVAL, LARGE_MAZE_EVAL
+from .maze_toy import MazeToy, OPEN
 from gym.envs.registration import register
 
 register(
@@ -164,6 +165,20 @@ register(
     id='maze2d-open-dense-v0',
     entry_point='d4rl.pointmaze:MazeEnv',
     max_episode_steps=300,
+    kwargs={
+        'maze_spec':OPEN,
+        'reward_type':'dense',
+        'reset_target': False,
+        'ref_min_score': 11.17817,
+        'ref_max_score': 27.166538620695782,
+        'dataset_url':'http://rail.eecs.berkeley.edu/datasets/offline_rl/maze2d/maze2d-open-dense.hdf5'
+    }
+)
+
+register(
+    id='maze2d-toy-v0',
+    entry_point='d4rl.pointmaze:MazeToy',
+    max_episode_steps=200,
     kwargs={
         'maze_spec':OPEN,
         'reward_type':'dense',

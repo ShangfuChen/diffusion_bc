@@ -22,18 +22,25 @@ from gym.wrappers.monitoring.video_recorder import VideoRecorder
 from rlf.exp_mgr.viz_utils import save_mp4
 
 
-# left_1 = np.array([[-0.1, 0]])
-left_2 = np.repeat(np.array([[-1, 0]]), 20, axis=0)
-left_3 = np.repeat(np.array([[0, 0]]), 75, axis=0)
-left_4 = np.repeat(np.array([[1, 0]]), 17, axis=0)
-# up_1 = np.array([[0, 0.1]])
-up_2 = np.repeat(np.array([[0, 1]]), 20, axis=0)
-up_3 = np.repeat(np.array([[0, 0]]), 75, axis=0)
-up_4 = np.repeat(np.array([[0, -1]]), 16, axis=0)
+left_1 = np.repeat(np.array([[-1, 0]]), 20, axis=0)
+left_2 = np.repeat(np.array([[0, 0]]), 75, axis=0)
+left_3 = np.repeat(np.array([[1, 0]]), 17, axis=0)
+up_1 = np.repeat(np.array([[0, 1]]), 20, axis=0)
+up_2 = np.repeat(np.array([[0, 0]]), 75, axis=0)
+up_3 = np.repeat(np.array([[0, -1]]), 16, axis=0)
 # action_list = np.concatenate((left_1, left_2, left_3, left_4), axis=0)
 # action_list = np.concatenate((left_2, left_3, left_4), axis=0)
-action_list = np.concatenate((left_2, left_3, left_4,
-                              up_2, up_3, up_4), axis=0)
+action_list = np.concatenate((left_1, left_2, left_3,
+                              up_1, up_2, up_3), axis=0)
+
+x1 = np.repeat(np.array([[0.5, 0]]), 40, axis=0)
+y1 = np.repeat(np.array([[0, 0.5]]), 40, axis=0)
+x2 = np.repeat(np.array([[-0.7, 0]]), 40, axis=0)
+y2 = np.repeat(np.array([[0, -0.7]]), 41, axis=0)
+# x2 = np.repeat(np.array([[-1, 0]]), 20, axis=0)
+# y2 = np.repeat(np.array([[0, -1]]), 20, axis=0)
+action_list_2 = np.concatenate((x1, y1, x2, y2), axis=0)
+
 
 def get_action(idx, obs):
     action = action_list[idx]
@@ -57,6 +64,12 @@ def get_action(idx, obs):
         x = y = 1
     return np.array([x, y])
 
+def get_action_det(idx):
+    if idx < action_list_2.shape[0] - 1:
+        return action_list_2[idx]
+    else:
+        return np.array([1, 1])
+
 def run(env_name, num_episode = 10):
     env = gym.make(env_name)
     obs_space = env.observation_space
@@ -75,9 +88,10 @@ def run(env_name, num_episode = 10):
     done_list = []
     action_list = []
     while episode < num_episode:
-        action = get_action(frame_idx, obs)
-        print(obs)
-        print(action)
+        # action = get_action(frame_idx, obs)
+        action = get_action_det(frame_idx)
+        # print(obs)
+        # print(action)
         if action.sum() == 2:
             print("stop")
             input()
@@ -86,7 +100,9 @@ def run(env_name, num_episode = 10):
         obs, reward, done, info = env.step(action)
         next_obs.append(torch.from_numpy(obs).unsqueeze(0))
         frame_idx += 1
-        if info['goal_achieved']:
+        if done:
+            print(obs)
+            # input()
             done_list.append(1)
             obs = env.reset()
             frame_idx = 0
@@ -104,7 +120,7 @@ def run(env_name, num_episode = 10):
         print(v.shape)
         if k == 'done':
             print(v.sum())
-    torch.save(traj, f'expert_datasets/toy_v2.pt')
+    # torch.save(traj, f'expert_datasets/toy_v4.pt')
 
 
 if __name__ == '__main__':
@@ -115,5 +131,5 @@ if __name__ == '__main__':
     path = args.path
     env_name = args.env_name
     if env_name == None:
-        env_name = 'maze2d-open-dense-v0'
+        env_name = 'maze2d-toy-v0'
     run(env_name)

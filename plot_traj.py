@@ -32,22 +32,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # parser.add_argument('--path')
     # args = parser.parse_args()
-    expert = torch.load('expert_datasets/toy_v2.pt')
+    expert = torch.load('expert_datasets/toy_v4.pt')
     expert_obs = expert['obs']
     obs_mean = expert_obs.mean(0)
     obs_std = expert_obs.std(0)
 
-    bc = torch.load('expert_datasets/toy_bc.pt')
+    bc = torch.load('expert_datasets/toy_v4_bc.pt')
     bc['obs'] = denorm_vec(bc['obs'], obs_mean, obs_std)
 
-    diff = torch.load('expert_datasets/toy_diff.pt')
+    diff = torch.load('expert_datasets/toy_v4_diff.pt')
     diff['obs'] = denorm_vec(diff['obs'], obs_mean, obs_std)
 
-    circle = plt.Circle((1, 5), 0.3, color='lightgreen')
+    # circle = plt.Circle((1, 5), 0.3, color='lightgreen')
     fig, ax = plt.subplots()
-    ax.add_patch(circle)
-    rect = patches.Rectangle((1.3, 1.3), 3.75, 3.75, facecolor='rosybrown')
-    ax.add_patch(rect)
+    # ax.add_patch(circle)
+    # rect = patches.Rectangle((1.3, 1.3), 3.75, 3.75, facecolor='rosybrown')
+    # ax.add_patch(rect)
     # Plot expert (black)#
     trajs = seperate_traj(expert)
     for traj in trajs[:3]:
@@ -56,15 +56,15 @@ if __name__ == '__main__':
         ax.plot(x, y, 'k')
     # Plot BC (blue)#
     trajs = seperate_traj(bc)
-    for traj in trajs[1:4]:
-        x, y = traj
+    for idx in [2, 3, 5]:
+        x, y = trajs[idx]
         ax.plot(x[0], y[0], 'o', color='cornflowerblue')
         ax.plot(x, y, color='cornflowerblue')
+    
     # Plot Diff (orange)#
     trajs = seperate_traj(diff)
-    for traj in trajs[1:4]:
-    # for traj in trajs[1:10]:
-        x, y = traj
+    for idx in [1, 3, 4]:
+        x, y = trajs[idx]
         ax.plot(x[0], y[0], 'o', color='darkorange')
         ax.plot(x, y, color='darkorange')
     plt.savefig('test.png')
