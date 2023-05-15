@@ -14,6 +14,7 @@ from rlf.algos.il.diff_bc import Diff_bc
 from rlf.algos.il.diff_policy import DiffPolicy
 from rlf.algos.il.ibc import IBC
 from rlf.algos.il.ae_bc import Ae_bc
+from rlf.algos.il.eng_bc import Eng_bc
 from rlf.algos.il.bco import BehavioralCloningFromObs
 from rlf.algos.il.bc_pretrain import BehavioralCloningPretrain
 from rlf.algos.nested_algo import NestedAlgo

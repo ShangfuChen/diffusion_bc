@@ -1,6 +1,7 @@
 import os
 import os.path as osp
 import time
+import wandb
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,6 +18,7 @@ from tqdm import tqdm
 from rlf.algos.base_algo import BaseAlgo
 from rlf.rl.loggers.base_logger import BaseLogger
 from rlf.baselines.vec_env.dummy_vec_env import DummyVecEnv
+
 
 def save_frames(frames, mode, num_steps):
     #args
@@ -89,6 +91,7 @@ def get_render_frames(
         cur_frame = [cur_frame]
     return cur_frame
 
+
 def evaluation(
     alg_env_settings,
     model,
@@ -98,14 +101,14 @@ def evaluation(
     mode = 'train',
     create_traj_saver_fn = None,
     num_processes = 1,
-    num_eval = 100,
+    num_eval = 50,
     device = 'cuda'
 ):
     #args
     eval_save = False
     traj_dir = './data/traj'
     env_name = 'maze2d-medium-v2'
-    prefix = 'diff-bc'
+    prefix = 'eng-bc'
     eval_num_processes = 1
     num_render = 1
     eval_only = False
@@ -121,27 +124,7 @@ def evaluation(
         alg_env_settings,
 
     )
-    '''
-    envs = make_env(
-        seed,
-        num_processes,
-        gamma = 0.99,
-        device = 'cuda',
-        allow_early_resets = True,
-        env_interface,
-        args,
-        alg_env_settings,
-        num_frame_stack=None,
-        set_eval = True
-    )
-    '''
     eval_envs = DummyVecEnv([envs])
-
-    '''
-    def make_env(rank, env_id, seed, allow_early_resets, env_interface,
-        set_eval, alg_env_settings, immediate_call=False):
-    '''
-
     assert get_vec_normalize(eval_envs) is None, "Norm is manually applied"
 
     def obfilt(x, update):
@@ -177,7 +160,6 @@ def evaluation(
     fail_frames = []
 
     if num_render is None or num_render > 0:
-
         frames.extend(
             get_render_frames(
                 eval_envs,
@@ -190,10 +172,8 @@ def evaluation(
                 evaluated_episode_count,
             )
         )
-    
-    is_succ = False
+
     goal_achieved = []
-    goal_distance = []
     flag = 0
     count_flag = False
     step_num = 0 # the number counting time steps
@@ -219,7 +199,6 @@ def evaluation(
         else:
             finished_count = sum([int(d) for d in done])
             #finished_count = int(infos[0]["goal_achieved"])
-        
         pbar.update(finished_count)
         evaluated_episode_count += finished_count
 
@@ -234,7 +213,6 @@ def evaluation(
         should_render = (num_render) is None or (
             evaluated_episode_count < num_render
         )
-
         if should_render and flag>=0:
             frames.extend(
                 get_render_frames(
@@ -249,15 +227,14 @@ def evaluation(
                 )
             )
         obs = next_obs
-
-        #step_log_vals = utils.agg_ep_log_stats(infos, ac_info.extra)
-        
-        #for k, v in step_log_vals.items():
-        #    ep_stats[k].extend(v)
+        step_log_vals = utils.agg_ep_log_stats(infos, {})
+        for k, v in step_log_vals.items():
+            ep_stats[k].extend(v)
         
         if count_flag:
             flag  = flag - 1
-        
+        goal_achieved.append(infos[0]["goal_achieved"])
+        '''
         if is_succ == False:
             step_num += 1
             if env_name == 'maze2d-medium-v2':
@@ -267,7 +244,6 @@ def evaluation(
             if is_succ:
                 flag = 6
                 count_flag = True
-        
         if finished_count == 1:
             #is_succ = step_log_vals["ep_fsound_goal"][0]
             goal_achieved.append(is_succ)
@@ -293,11 +269,10 @@ def evaluation(
             flag = 0
             count_flag = False
             step_num = 0 # number counting time-steps return to zero
-
-    plt.savefig('goal.png')
-    plt.close()  
+        '''
+    # plt.savefig('goal.png')
+    # plt.close()  
     pbar.close()
-    info = {}
     if eval_save:
         traj_saver.save()
 
@@ -307,18 +282,18 @@ def evaluation(
     for k, v in ep_stats.items():
         print(" - %s: %.5f" % (k, np.mean(v)))
         ret_info[k] = np.mean(v)
-    
     succ_rate = np.sum(goal_achieved) / num_eval
-    ret_info['goal_completion'] = succ_rate
+    print(f'Success rate: {succ_rate}')
+    wandb.log({'succ_rate': succ_rate})
+    # ret_info['goal_completion'] = succ_rate
     #print("timestep:", sum(eval_step_list) / len(eval_step_list))
-    ret_info['time_step'] = sum(eval_step_list) / len(eval_step_list)
-
+    # ret_info['time_step'] = sum(eval_step_list) / len(eval_step_list)
     save_file = save_frames(frames, mode, num_steps)
     if save_file is not None:
         log.log_video(save_file, num_steps, vid_fps)
 
     #return ret_info, eval_envs, goal_achieved, goal_distance, eval_step_list
-    return ret_info, eval_envs, succ_rate, goal_distance, eval_step_list
+    return ret_info
 
 if __name__ == '__main__':
     action = torch.Tensor([1,2])

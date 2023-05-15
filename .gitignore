@@ -2,6 +2,7 @@
 /wandb
 /expert_datasets
 /rl-toolkit/dm
+/experiments
 *.pyc
 *.mp4
 *.png

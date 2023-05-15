@@ -22,7 +22,7 @@ class TrainConfig:
     train_dataset_size: int = 10
     test_dataset_size: int = 500
     max_epochs: int = 200
-    lr: float = 1e-3
+    lr: float = 0.0005
     weight_decay: float = 0.0
     train_batch_size: int = 128
     test_batch_size: int = 64
@@ -34,7 +34,7 @@ class TrainConfig:
     cudnn_benchmark: bool = False
     log_every_n_steps: int = 10
     checkpoint_every_n_steps: int = 100
-    eval_every_n_steps: int = 10
+    eval_every_n_steps: int = 50
     policy_type: trainer.PolicyType = trainer.PolicyType.IMPLICIT
     stochastic_optimizer_train_samples: int = 64
 
@@ -87,7 +87,7 @@ def make_train_state(
     action_dim = 2
     input_dim = state_dim + action_dim
     output_dim = 1
-    hidden_dim = 128
+    hidden_dim = 256
     depth = 4
     mlp_config = models.MLPConfig(
         input_dim = input_dim,
@@ -130,19 +130,17 @@ def main(train_config: TrainConfig) -> None:
 
     # Initialize train and test dataloaders.
     dataloader = make_dataloaders(train_config)
-
     train_state = make_train_state(train_config, dataloader)
-
+    name = f'256_4'
     for epoch in tqdm(range(train_config.max_epochs)):
-        if not train_state.steps % train_config.checkpoint_every_n_steps:
-            experiment.save_checkpoint(train_state, step=train_state.steps)
         for batch in dataloader:
             train_log_data = train_state.training_step(*batch)
-            # Log to tensorboard.
-            # if not train_state.steps % train_config.log_every_n_steps:
-                # experiment.log(train_log_data, step=train_state.steps)
+        if not (epoch+1) % train_config.eval_every_n_steps:
+            train_state.evaluate()
+        if not epoch % train_config.checkpoint_every_n_steps:
+            train_state.save(epoch, name)
     # Save one final checkpoint.
-    experiment.save_checkpoint(train_state, step=train_state.steps)
+    train_state.save(epoch, name)
 
 
 if __name__ == "__main__":

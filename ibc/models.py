@@ -44,15 +44,15 @@ class MLP(nn.Module):
             layers = [
                 nn.Linear(config.input_dim, config.hidden_dim),
                 # nn.BatchNorm1d(config.hidden_dim),
-                # dropout_layer(),
                 config.activation_fn.value(),
+                dropout_layer(),
             ]
             for _ in range(config.hidden_depth - 1):
                 layers += [
                     nn.Linear(config.hidden_dim, config.hidden_dim),
                     # nn.BatchNorm1d(config.hidden_dim),
-                    # dropout_layer(),
                     config.activation_fn.value(),
+                    dropout_layer(),
                 ]
             layers += [nn.Linear(config.hidden_dim, config.output_dim)]
         layers = [layer for layer in layers if not isinstance(layer, nn.Identity)]
@@ -160,6 +160,8 @@ class PolicyMLP(nn.Module):
         self.mlp = MLP(config)
         
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        # import ipdb
+        # ipdb.set_trace()
         fused = torch.cat([x.unsqueeze(1).expand(-1, y.size(1), -1), y], dim=-1)
         B, N, D = fused.size()
         fused = fused.reshape(B * N, D)

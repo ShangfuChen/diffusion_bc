@@ -95,7 +95,7 @@ register(
     max_episode_steps=400,
     kwargs={
         'maze_spec':MEDIUM_MAZE,
-        'reward_type':'sparse',
+        'reward_type':'dense',
         'reset_target': True,
         'ref_min_score': 13.13,
         'ref_max_score': 277.39,

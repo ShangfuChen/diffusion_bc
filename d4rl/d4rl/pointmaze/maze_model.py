@@ -214,16 +214,12 @@ class MazeEnv(mujoco_env.MujocoEnv, utils.EzPickle, offline_env.OfflineEnv):
             self.set_target(
                 np.array(self.reset_locations[0]).astype(self.observation_space.dtype)
             )
-        self.set_target(np.array([4.8, 2.446]))
-        # self.set_target(np.array([5, 2.778]))
-        # self.empty_and_goal_locations = self.reset_locations + self.goal_locations
-        self.empty_and_goal_locations = [(1, 1)]
+        self.empty_and_goal_locations = self.reset_locations + self.goal_locations
 
         # For different coverages
         self._initial_locations = self._target_locations = self.empty_and_goal_locations
         self.set_coverage(1.0)
-        self.set_noise_ratio(0, 0)
-        # self.set_noise_ratio(1.0, 0)
+        self.set_noise_ratio(1.0, 1.0)
         with model.asfile() as f:
             mujoco_env.MujocoEnv.__init__(self, model_path=f.name, frame_skip=1)
         utils.EzPickle.__init__(self)
@@ -236,7 +232,7 @@ class MazeEnv(mujoco_env.MujocoEnv, utils.EzPickle, offline_env.OfflineEnv):
         self.set_marker()
         ob = self._get_obs()
         if self.reward_type == "sparse":
-            reward = 1.0 if np.linalg.norm(ob[0:2] - self._target) <= 0.1 else 0.0
+            reward = 1.0 if np.linalg.norm(ob[0:2] - self._target) <= 0.5 else 0.0
         elif self.reward_type == "dense":
             reward = np.exp(-np.linalg.norm(ob[0:2] - self._target))
         else:
@@ -244,7 +240,7 @@ class MazeEnv(mujoco_env.MujocoEnv, utils.EzPickle, offline_env.OfflineEnv):
         # done = False
 
         # Add goal_achieved to info dict
-        goal_achieved = True if np.linalg.norm(ob[0:2] - self._target) <= 0.1 else False
+        goal_achieved = True if np.linalg.norm(ob[0:2] - self._target) <= 0.5 else False
         x = ob[0]
         y = ob[1]
         # fall = (x > 1.3) and (y > 1.3)

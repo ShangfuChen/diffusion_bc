@@ -13,9 +13,10 @@ from rlf.algos.il.base_il import BaseILAlgo
 from rlf.args import str2bool
 from rlf.storage.base_storage import BaseStorage
 from tqdm import tqdm
+from ibc import models
 import wandb
 import math
-from eng_model as EngModel
+
 
 class Eng_bc(BaseILAlgo):
     """
@@ -37,23 +38,32 @@ class Eng_bc(BaseILAlgo):
         self.action_dim = rutils.get_ac_dim(self.policy.action_space)
         if self.args.bc_state_norm:
             self.norm_mean = self.expert_stats["state"][0]
-            self.norm_var = torch.pow(self.expert_stats["state"][1], 2)
+            self.norm_std = self.expert_stats["state"][1]
         else:
             self.norm_mean = None
-            self.norm_var = None
+            self.norm_std = None
         self.num_bc_updates = 0
         self.L1 = nn.L1Loss().cuda()
         self.coeff = args.coeff
         self.coeff_bc = args.coeff_bc
         num_steps = 100
-        dim = 8
-        self.eng_model = EngModel().to(self.args.device)
+        input_dim = 8
+        hidden_dim = 256
+        depth = 4
+        model_config = models.MLPConfig(
+            input_dim = input_dim,
+            hidden_dim = hidden_dim,
+            output_dim = 1,
+            hidden_depth = depth,
+            dropout_prob = 0,
+        )
+        self.eng_model = models.PolicyMLP(config=model_config).to(self.args.device)
         self.eng_model.load_state_dict(torch.load(args.model_path))
 
 
-    def get_eng_loss(self, states, action):
-        energy = -self.model(states, action)
-        return energy
+    def get_eng_loss(self, state, action):
+        energy = self.eng_model(state, action.unsqueeze(1))
+        return energy.squeeze()
 
     def get_env_settings(self, args):
         settings = super().get_env_settings(args)
@@ -65,10 +75,11 @@ class Eng_bc(BaseILAlgo):
     def _norm_state(self, x):
         obs_x = torch.clamp(
             (rutils.get_def_obs(x) - self.norm_mean)
-            / (torch.pow(self.norm_var, 0.5) + 1e-8),
+            / (self.norm_std + 1e-8),
             -10.0,
             10.0,
         )
+        obs_x = obs_x*(self.norm_std != 0)
         if isinstance(x, dict):
             x["observation"] = obs_x
             return x
@@ -125,12 +136,18 @@ class Eng_bc(BaseILAlgo):
             true_actions.view(-1, self.action_dim),
             self.policy.action_space,
         )
-        eng_loss = self.coeff*self.get_eng_loss(states, pred_actions)
+        eng = self.get_eng_loss(states, pred_actions)
+        exp_eng = self.get_eng_loss(states, true_actions)
+        eng_loss = self.coeff*(torch.abs(eng-exp_eng).mean())
+        # import ipdb
+        # ipdb.set_trace()
         total_loss = loss + eng_loss
         self._standard_step(total_loss) #backward
         self.num_bc_updates += 1
         log_dict["action_loss"] = loss.item()
-        log_dict["eng_loss"] = diff_loss.item()
+        log_dict["eng_loss"] = eng_loss.item()
+        log_dict["eng"] = eng.mean().item()
+        log_dict["exp_eng"] = exp_eng.mean().item()
         return log_dict
 
 

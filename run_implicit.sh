@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-
 set -e
 set -x
 
-EXPERIMENT_NAME=implicit_ebm_${train_size}
+EXPERIMENT_NAME=implicit_ebm
 
 python train_ibc.py \
     --experiment-name $EXPERIMENT_NAME \
@@ -12,6 +11,6 @@ python train_ibc.py \
     --weight-decay 0.0 \
     --max-epochs 2000 \
     --train_batch_size 128 \
-    --lr 1e-3 \
+    --lr 0.0005 \
     --spatial-reduction SPATIAL_SOFTMAX \
-    --stochastic-optimizer-train-samples 128 \
+    --stochastic-optimizer-train-samples 64 \

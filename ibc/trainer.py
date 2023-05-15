@@ -4,6 +4,7 @@ import dataclasses
 import enum
 from typing import Protocol
 
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -79,7 +80,7 @@ class ImplicitTrainState(BasicPolicy, nn.Module):
             stochastic_optim_config,
             device,
         )
-
+    '''
     def init(self, obs_space, action_space, args):
         self.action_space = action_space
         self.obs_space = obs_space
@@ -106,7 +107,8 @@ class ImplicitTrainState(BasicPolicy, nn.Module):
                 raise ValueError('Can only fuse 1D states')
             base_out_dim += obs_space.spaces[k].shape[0]
         self.base_out_shape = (base_out_dim,)
-    
+    '''
+
     #def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         return self.model(x,y)
@@ -131,17 +133,14 @@ class ImplicitTrainState(BasicPolicy, nn.Module):
         # Generate a random permutation of the positives and negatives.
         permutation = torch.rand(targets.size(0), targets.size(1)).argsort(dim=1)
         targets = targets[torch.arange(targets.size(0)).unsqueeze(-1), permutation]
-
         # Get the original index of the positive. This will serve as the class label
         # for the loss.
         ground_truth = (permutation == 0).nonzero()[:, 1].cuda()
-
         # For every element in the mini-batch, there is 1 positive for which the EBM
         # should output a low energy value, and N negatives for which the EBM should
         # output high energy values.
         # import ipdb; ipdb.set_trace()
         energy = self.model(input, targets)
-
         # Interpreting the energy as a negative logit, we can apply a cross entropy loss
         # to train the EBM.
         logits = -1.0 * energy
@@ -162,27 +161,31 @@ class ImplicitTrainState(BasicPolicy, nn.Module):
         )
 
     @torch.no_grad()
-    def evaluate(self, dataloader: torch.utils.data.DataLoader):
+    def evaluate(self):
         self.model.eval()
-
-        #action = torch.Tensor([1,2])
-        settings = BaseAlgo.get_env_settings(None)
+        # settings = BaseAlgo.get_env_settings()
         env_interface = get_env_interface('maze2d-medium-v2', 1)
         log = BaseLogger()
+        ret_info = evaluation(None, self, env_interface, 100, log)
+        for k, v in ret_info.items():
+            wandb.log({k: v})
+        # print("succ_rate:", succ_rate)
+        # print("goal_distance:", goal_distance)
+        # wandb.log({'succ_rate': succ_rate})
+        # wandb.log({'eval_step': sum(eval_step_list) / len(eval_step_list)})
 
-        ret_info, eval_envs, succ_rate, goal_distance, eval_step_list = evaluation(
-            settings, self, env_interface, 100, log)
-        print("succ_rate:", succ_rate)
-        print("goal_distance:", goal_distance)
-        
-        wandb.log({'succ_rate': succ_rate})
-        wandb.log({'eval_step': sum(eval_step_list) / len(eval_step_list)})
-        
     @torch.no_grad()
     def predict(self, input: torch.Tensor) -> torch.Tensor:
         self.model.eval()
         return self.stochastic_optimizer.infer(input.to(self.device), self.model)
     
+    def save(self, epoch, name):
+        path = f'ibc/data/{name}'
+        if not os.path.exists(path):
+            os.makedirs(path)
+        torch.save(self.model.state_dict(), f'ibc/data/{name}/model_{epoch}.pt')
+
+
 class PolicyType(enum.Enum):
     IMPLICIT = ImplicitTrainState
     """An implicit policy is a conditional EBM trained with an InfoNCE objective."""

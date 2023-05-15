@@ -9,7 +9,8 @@ import torch.nn as nn
 import numpy as np
 from rlf import run_policy, evaluate_policy
 from rlf.algos import (GAIL, DDPG, PPO, BaseAlgo, BehavioralCloning, Diff_bc, 
-                       DiffPolicy, Ae_bc, BehavioralCloningFromObs, BehavioralCloningPretrain,
+                       DiffPolicy, Ae_bc, BehavioralCloningFromObs, 
+                       BehavioralCloningPretrain, Eng_bc,
                        GailDiscrim, IBC)
 from rlf.algos.il.base_il import BaseILAlgo
 from rlf.algos.il.gaifo import GAIFO
@@ -145,26 +146,36 @@ def get_diffusion_policy(env_name, args, is_stoch):
             num_units=2100,
             is_stoch=is_stoch,
             )
+    if env_name[:6] == 'Walker':
+        state_dim = 17
+        action_dim = 6
+        return fetch_policy.MLPDiffusion(
+            n_steps = 100,
+            action_dim=action_dim, 
+            state_dim=state_dim,
+            num_units=args.hidden_dim,
+            depth=args.depth,
+            is_stoch=is_stoch,
+            )
 
 
 def get_ibc_policy(env_name, args, is_stoch):
     train_config = args
+    hidden_dim = args.hidden_dim
+    depth = args.depth
     ##### config #####
     if env_name[:9] == 'FetchPush':
         state_dim = 16
         action_dim = 3
-        hidden_dim = args.hidden_dim
-        depth = args.depth
     if env_name[:9] == 'FetchPick':
         state_dim = 16
         action_dim = 4
-        hidden_dim = args.hidden_dim
-        depth = args.depth
     if env_name[:10] == 'CustomHand':
         state_dim = 68
         action_dim = 20
-        hidden_dim = args.hidden_dim
-        depth = args.depth
+    if env_name[:6] == 'Walker':
+        state_dim = 17
+        action_dim = 6
     input_dim = state_dim + action_dim
     
     mlp_config = models.MLPConfig(
@@ -213,7 +224,7 @@ def get_setup_dict():
         "rnd": (BaseAlgo(), lambda env_name, _: RandomPolicy()),
         "bc": (BehavioralCloning(), partial(get_basic_policy, is_stoch=False)),
         "ibc": (IBC(), partial(get_ibc_policy, is_stoch=False)),
-        # "eng-bc": (Eng_bc(), partial(get_basic_policy, is_stoch=False)),
+        "eng-bc": (Eng_bc(), partial(get_basic_policy, is_stoch=False)),
         "diff-bc": (Diff_bc(), partial(get_basic_policy, is_stoch=False)),
         "diff-policy": (DiffPolicy(), partial(get_diffusion_policy, is_stoch=False)),
         "ae-bc": (Ae_bc(), partial(get_basic_policy, is_stoch=False)),
