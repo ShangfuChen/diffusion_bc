@@ -1,21 +1,34 @@
-import os
-import sys
-
 import copy
+
 import gym
 import numpy as np
 import rlf.algos.utils as autils
 import rlf.rl.utils as rutils
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from rlf.algos.il.base_il import BaseILAlgo
 from rlf.args import str2bool
 from rlf.storage.base_storage import BaseStorage
 from tqdm import tqdm
-from vae.lib import SimpleVAE, FetchVAE
-import math
 
-class Ae_bc(BaseILAlgo):
+
+class Discriminator(nn.Module):
+    def __init__(self, dim, hidden_dim=256):
+        super(Discriminator, self).__init__()
+        self.model = nn.Sequential(
+            nn.Linear(dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1),
+            nn.Sigmoid(),
+        )
+    def forward(self, inp):
+        return self.model(inp)
+
+
+class GANBC(BaseILAlgo):
     """
     When used as a standalone updater, BC will perform a single update per call
     to update. The total number of udpates is # epochs * # batches in expert
@@ -40,28 +53,20 @@ class Ae_bc(BaseILAlgo):
             self.norm_mean = None
             self.norm_var = None
         self.num_bc_updates = 0
-        if args.env_name[:9] == 'FetchPush':
-            dim = 19
-            self.model = FetchVAE(in_channels=dim, latent_dim=512).to(self.args.device)
-        if args.env_name[:9] == 'FetchPick':
-            dim = 20
-            self.model = FetchVAE(in_channels=dim, latent_dim=512).to(self.args.device)
-        if args.env_name[:6] == 'Walker':
-            dim = 23
-            self.model = SimpleVAE(in_channels=dim, latent_dim=512).to(self.args.device)
-        if args.env_name[:4] == 'maze':
-            dim = 8
-            self.model = SimpleVAE(in_channels=dim, latent_dim=128).to(self.args.device)
-        weight_path = args.ae_path
-        self.model.load_state_dict(torch.load(weight_path))
         self.coeff = args.coeff
         self.coeff_bc = args.coeff_bc
-
-    def get_loss(self, states, pred_action, expert_action):
-        pred = torch.cat((states, pred_action), 1)
-        expert = torch.cat((states, expert_action), 1)
-        pred_loss, expert_loss = self.model.get_loss(pred),  self.model.get_loss(expert)
-        return pred_loss, expert_loss 
+        ### 8 refer to state(6) + action(2) in Maze ###
+        self.disc = Discriminator(8).cuda()
+        self.disc_opt = torch.optim.Adam(
+            self.disc.parameters(),
+            lr = args.lr,
+            weight_decay = args.weight_decay,
+            eps = args.eps,
+        )
+        self.BCE = nn.BCELoss()
+        # self.disc_scheduler = torch.optim.lr_scheduler.LinearLR(
+            # self.disc_opt,
+        # )
 
     def get_env_settings(self, args):
         settings = super().get_env_settings(args)
@@ -73,7 +78,7 @@ class Ae_bc(BaseILAlgo):
     def _norm_state(self, x):
         obs_x = torch.clamp(
             (rutils.get_def_obs(x) - self.norm_mean)
-            / (torch.pow(self.norm_var, 0.5) + 1e-8),
+            / torch.pow(self.norm_var + 1e-8, 0.5),
             -10.0,
             10.0,
         )
@@ -98,16 +103,13 @@ class Ae_bc(BaseILAlgo):
 
     def full_train(self, update_iter=0):
         action_loss = []
-        diff_loss = []
         prev_num = 0
-
         # First BC
         with tqdm(total=self.args.bc_num_epochs) as pbar:
             while self.num_epochs < self.args.bc_num_epochs:
                 super().pre_update(self.num_bc_updates)
                 log_vals = self._bc_step(False)
                 action_loss.append(log_vals["_pr_action_loss"])
-                diff_loss.append(log_vals["_pr_diff_loss"])
 
                 pbar.update(self.num_epochs - prev_num)
                 prev_num = self.num_epochs
@@ -129,6 +131,7 @@ class Ae_bc(BaseILAlgo):
         if decay_lr:
             super().pre_update(self.num_bc_updates)
         expert_batch = self._get_next_data()
+
         if expert_batch is None:
             self._reset_data_fetcher()
             expert_batch = self._get_next_data()
@@ -136,39 +139,50 @@ class Ae_bc(BaseILAlgo):
         states, true_actions = self._get_data(expert_batch)
 
         log_dict = {}
-        pred_actions, _, _ = self.policy(states, None, None)
-        
-        if rutils.is_discrete(self.policy.action_space):
-            pred_label = rutils.get_ac_compact(self.policy.action_space, pred_actions)
-            acc = (pred_label == true_actions.long()).sum().float() / pred_label.shape[
-                0
-            ]
-            log_dict["_pr_acc"] = acc.item()
+        pred_actions, _,  _ = self.policy(states, None, None)
+        # if rutils.is_discrete(self.policy.action_space):
+            # pred_label = rutils.get_ac_compact(self.policy.action_space, pred_actions)
+            # acc = (pred_label == true_actions.long()).sum().float() / pred_label.shape[0]
+            # log_dict["_pr_acc"] = acc.item()
+
+        ### Update Discriminator ###
+        real_pair = torch.cat((states, true_actions), dim=1)
+        real_label = torch.ones(real_pair.shape[0]).cuda()
+        fake_pair = torch.cat((states, pred_actions), dim=1)
+        fake_label = torch.zeros(fake_pair.shape[0]).cuda()
+        real_out = self.disc(real_pair).squeeze()
+        real_loss = self.BCE(real_out, real_label)
+        fake_out = self.disc(fake_pair).squeeze()
+        fake_loss = self.BCE(fake_out, fake_label)
+        D_loss = real_loss + fake_loss
+        self.disc_opt.zero_grad()
+        D_loss.backward(retain_graph=True)
+        self.disc_opt.step()
+
+        ### Updata Policy (G) ###
+        self.policy.zero_grad()
+        pred_actions, _,  _ = self.policy(states, None, None)
+        fake_pair_G = torch.cat((states, pred_actions), dim=1)
+        G_label = torch.ones(fake_pair.shape[0]).cuda()
+        fake_out_G = self.disc(fake_pair_G).squeeze()
+        G_loss = self.coeff*self.BCE(fake_out_G, G_label)
         loss = self.coeff_bc*autils.compute_ac_loss(
             pred_actions,
             true_actions.view(-1, self.action_dim),
             self.policy.action_space,
         )
-        
-        pred_loss, expert_loss = self.get_loss(states, pred_actions, true_actions)
-        ae_loss = self.coeff*torch.clip(pred_loss - expert_loss, min=0)
-        #print("pred_loss:", pred_loss)
-        #print("expert_loss:", expert_loss)
-        
-        total_loss = loss + ae_loss
-
-        self._standard_step(total_loss) #backward
+        self._standard_step(loss+G_loss)
         self.num_bc_updates += 1
 
         val_loss = self._compute_val_loss()
         if val_loss is not None:
             log_dict["_pr_val_loss"] = val_loss.item()
 
-        log_dict["_pr_action_loss"] = loss.item()
-        log_dict["_pr_ae_loss"] = ae_loss.item()
-        log_dict["_pr_pred_loss"] = pred_loss.item()
-        log_dict["_pr_expert_loss"] = expert_loss.item()
-        
+        log_dict["action_loss"] = loss.item()
+        log_dict["real_loss"] = real_loss.item()
+        log_dict["fake_loss"] = fake_loss.item()
+        log_dict["G_loss"] = G_loss.item()
+        log_dict["D_loss"] = D_loss.item()
         return log_dict
 
     def _get_data(self, batch):
@@ -191,29 +205,23 @@ class Ae_bc(BaseILAlgo):
         if self.val_train_loader is None:
             return None
         with torch.no_grad():
-            action_losses = []
-            ae_losses = []
+            losses = []
             for batch in self.val_train_loader:
                 states, true_actions = self._get_data(batch)
                 pred_actions, _, _ = self.policy(states, None, None)
-                action_loss = autils.compute_ac_loss(
+                loss = autils.compute_ac_loss(
                     pred_actions,
                     true_actions.view(-1, self.action_dim),
                     self.policy.action_space,
                 )
-                action_losses.append(action_loss.item())
-                
-                pred_loss, expert_loss = self.get_loss(states, pred_actions, true_actions)
-                ae_loss = torch.clip(pred_loss - expert_loss, min=0)
-                
-                ae_losses.append(ae_loss.item())
+                losses.append(loss.item())
 
-            return np.mean(action_losses + ae_losses)
+            return np.mean(losses)
 
-    def update(self, storage, t=1):
-        top_log_vals = super().update(storage) #actor_opt_lr
-        log_vals = self._bc_step(True) #_pr_action_loss
-        log_vals.update(top_log_vals) #_pr_action_loss
+    def update(self, storage):
+        top_log_vals = super().update(storage)
+        log_vals = self._bc_step(True)
+        log_vals.update(top_log_vals)
         return log_vals
 
     def get_storage_buffer(self, policy, envs, args):
@@ -240,7 +248,6 @@ class Ae_bc(BaseILAlgo):
                 "--eval-interval", type=int, default=100 * ADJUSTED_INTERVAL
             )
         parser.add_argument("--no-wb", default=False, action="store_true")
-        parser.add_argument("--coeff", type=float, default=1)
 
         #########################################
         # New args

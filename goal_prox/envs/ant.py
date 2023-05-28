@@ -69,7 +69,7 @@ class AntGoalEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             [
                 self.sim.data.qpos.flat[2:],
                 self.sim.data.qvel.flat,
-                np.clip(self.sim.data.cfrc_ext, -1, 1).flat,
+                # np.clip(self.sim.data.cfrc_ext, -1, 1).flat,
                 self.goal - current_position[:2],
             ]
         )

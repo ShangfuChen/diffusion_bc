@@ -15,7 +15,9 @@ from rlf.storage.base_storage import BaseStorage
 from tqdm import tqdm
 import wandb
 import dm.ddpm_walker as ddpm_walker
-import dm.ddpm_fetch_norm as ddpm_fetch
+# import dm.ddpm_walker_norm as ddpm_walker
+# import dm.ddpm_fetch_norm as ddpm_fetch
+import dm.ddpm_fetch as ddpm_fetch
 import dm.ddpm_hand as ddpm_hand
 import dm.ddpm_toy as ddpm_toy
 # import dm.ddpm_hand_norm as ddpm_hand
@@ -59,13 +61,18 @@ class Diff_bc(BaseILAlgo):
             self.diff_model = ddpm_fetch.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
         elif args.env_name[:6] == 'Walker':
             dim = 23
-            self.diff_model = ddpm_walker.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
+            self.diff_model = ddpm_walker.MLPDiffusion(num_steps, 
+                                                       input_dim=dim,
+                                                       num_units=2048).to(self.args.device)
         elif args.env_name[:10] == 'CustomHand':
             dim = 88
             self.diff_model = ddpm_hand.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
         elif args.env_name[:4] == 'maze':
             dim = 8
             self.diff_model = ddpm_toy.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
+        elif args.env_name[:3] == 'Ant':
+            dim = 50
+            self.diff_model = ddpm_fetch.MLPDiffusion(num_steps, input_dim = dim).to(self.args.device)
         weight_path = self.args.ddpm_path
         self.diff_model.load_state_dict(torch.load(weight_path))
         # data_stats = self.expert_dataset.get_expert_stats(self.args.device)

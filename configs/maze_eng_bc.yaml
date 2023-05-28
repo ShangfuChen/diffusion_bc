@@ -4,8 +4,7 @@ method: grid
 
 parameters:
   seed:
-    values: [1, 2, 3]
-    #values: [1]
+    values: [1, 32, 99]
   prefix:
     value: "eng-bc"
   alg:
@@ -17,7 +16,7 @@ parameters:
   traj-load-path:
     value: "./ibc/maze2d_100.pt"
   model-path:
-    value: "./ibc/data/256_4/model_1999.pt"
+    value: "./ibc/data/128_4/model_2000.pt"
   coeff:
     values: [0.1]
   coeff-bc:
@@ -25,13 +24,13 @@ parameters:
   env-name:
     value: "maze2d-medium-v2"
   eval-num-processes:
-    value: 1
+    value: 10
   num-eval:
-    value: 100
+    value: 10
   cuda:
     value: True
   num-render:
-    value: 3
+    value: 0
   vid-fps:
     value: 60
   lr:

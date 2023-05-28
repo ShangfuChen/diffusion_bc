@@ -37,7 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('--traj-load-path')
     args = parser.parse_args()
     env = args.traj_load_path.split('/')[-1].split('.')[0]
-
+    # env += '_1e-5'
     data = torch.load(args.traj_load_path)
     obs = data['obs']
     obs_mean = obs.mean(0)
@@ -45,13 +45,13 @@ if __name__ == '__main__':
     print(f'obs std: {obs_std}')
     if env[:4] == 'push' or  env[:4] == 'pick':
         obs_std[15] = 1
-    obs = norm_vec(obs, obs_mean, obs_std)
+    # obs = norm_vec(obs, obs_mean, obs_std)
 
     actions = data['actions']
     actions_mean = actions.mean(0)
     actions_std = actions.std(0)
     print(f'actions std: {actions_std}')
-    actions = norm_vec(actions, actions_mean, actions_std)
+    # actions = norm_vec(actions, actions_mean, actions_std)
     
     dataset = torch.cat((obs, actions), 1)
     dataset = dataset.numpy()
@@ -62,6 +62,9 @@ if __name__ == '__main__':
     if env[:6] == 'walker':
         in_channels = 23
         model = SimpleVAE(in_channels=in_channels, latent_dim=512)
+    elif env[:4] == 'maze':
+        in_channels = 8
+        model = SimpleVAE(in_channels=in_channels, latent_dim=128)
     elif env[:4] == 'push':
         in_channels = 19
         model = FetchVAE(in_channels=in_channels, latent_dim=512)
@@ -71,7 +74,7 @@ if __name__ == '__main__':
     print(f'Input channel size: {in_channels}')
     model.to(device)
 
-    optim = torch.optim.Adam(model.parameters(), lr=1*1e-4)
+    optim = torch.optim.Adam(model.parameters(), lr=1e-4)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optim, step_size=5000, gamma=.5)
 
     # training
@@ -104,27 +107,25 @@ if __name__ == '__main__':
             plt.plot(train_iteration_list, train_loss_list[100:], color='r')
             plt.xlabel('Iteration')
             plt.ylabel('Loss')
-            plt.title(f'{env}_vae_loss.png')
-            plt.savefig(f'{env}_vae_loss.png')
+            plt.title(f'{env}_loss.png')
+            plt.savefig(f'{env}_loss.png')
             plt.close()
 
         if i % 1000 == 0:
             with torch.no_grad():
                 # random sample images
-                fig, axs = plt.subplots(1, 2, figsize=(28, 3))
+                fig, axs = plt.subplots(1, 2, figsize=(14, 6))
                 for idx, batch_x in tqdm(enumerate(dataloader)):
                     batch_x = batch_x.to(torch.float32)
                     out = model(batch_x.to(device))
                     out = out[0].detach().cpu()
 
-                    axs[0].scatter(batch_x[:, -1], batch_x[:, -2], color='blue', edgecolor='white')
-                    axs[1].scatter(out[:, -1], out[:, -2], color='red', edgecolor='white')
-                    file_name = f'{env}_vae-1e-5-reconstruct.png'
+                    axs[0].scatter(batch_x[:300, 0], batch_x[:300, 1], color='blue', edgecolor='white')
+                    axs[1].scatter(out[:300, 0], out[:300, 1], color='red', edgecolor='white')
+                    file_name = f'{env}-reconstruct.png'
                 plt.savefig(file_name)
                 plt.close()  
-
-            torch.save(model.state_dict(), f'{env}_vae_1e-5.pt')
-
+            torch.save(model.state_dict(), f'{env}_vae.pt')
         qbar.update(1)
         # qbar.set_description(desc=f"step: {iter}, lr: {format(optim.param_groups[0]['lr'], '.2e')}, loss: {format(loss['loss'], '.3f')}, Reconstruction_Loss: {format(loss['Reconstruction_Loss'], '.3f')}, KLD: {format(loss['KLD'], '.3f')}.")
 

@@ -4,11 +4,11 @@ method: grid
 
 parameters:
   seed:
-    values: [1, 32, 99]
+    values: [1, 2, 3]
   prefix:
-    value: "bc"
+    value: "gan-bc"
   alg:
-    value: "bc"
+    value: "gan-bc"
   normalize-env:
     value: False
   bc-num-epochs:
@@ -16,23 +16,23 @@ parameters:
   traj-load-path:
     value: "./ibc/maze2d_100.pt"
   coeff:
-    values: [0]
+    values: [0.2]
   coeff-bc:
-    values: [1]
+    values: [0, 1]
   env-name:
     value: "maze2d-medium-v2"
   eval-num-processes:
-    value: 1
+    value: 10
   num-eval:
-    value: 100
+    value: 10
   cuda:
     value: True
   num-render:
-    value: 3
+    value: 1
   vid-fps:
     value: 60
   lr:
-    value: 0.0001
+    value: 0.00005
   log-interval:
     value: 200
   save-interval:
@@ -50,4 +50,6 @@ parameters:
   il-in-action-norm:
     value: False
   il-out-action-norm:
+    value: False
+  linear-lr-decay:
     value: False

@@ -278,7 +278,7 @@ class MazeEnv(mujoco_env.MujocoEnv, utils.EzPickle, offline_env.OfflineEnv):
         )
 
     def clip_velocity(self):
-        qvel = np.clip(self.sim.data.qvel,-5.0 , 5.0)
+        qvel = np.clip(self.sim.data.qvel, -5.0, 5.0)
         self.set_state(self.sim.data.qpos, qvel)
 
     def reset_model(self):
@@ -361,4 +361,3 @@ class MazeEnv(mujoco_env.MujocoEnv, utils.EzPickle, offline_env.OfflineEnv):
         if isinstance(ob, torch.Tensor):
             return 1.0 if np.linalg.norm(ob[0:2].cpu() - ob[-2:].cpu()) <= 0.5 else 0.0
         return 1.0 if np.linalg.norm(ob[0:2] - ob[-2:]) <= 0.5 else 0.0
-

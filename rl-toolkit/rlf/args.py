@@ -130,7 +130,7 @@ def add_args(parser):
     )
 
     parser.add_argument(
-        "--seed", type=int, default=31, help="random seed (default: 31)"
+        "--seed", type=int, default=1, help="random seed (default: 1)"
     )
     parser.add_argument(
         "--detect-nan",

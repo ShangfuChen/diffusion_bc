@@ -87,7 +87,7 @@ def make_train_state(
     action_dim = 2
     input_dim = state_dim + action_dim
     output_dim = 1
-    hidden_dim = 256
+    hidden_dim = 128
     depth = 4
     mlp_config = models.MLPConfig(
         input_dim = input_dim,
@@ -131,7 +131,7 @@ def main(train_config: TrainConfig) -> None:
     # Initialize train and test dataloaders.
     dataloader = make_dataloaders(train_config)
     train_state = make_train_state(train_config, dataloader)
-    name = f'256_4'
+    name = f'128_4'
     for epoch in tqdm(range(train_config.max_epochs)):
         for batch in dataloader:
             train_log_data = train_state.training_step(*batch)

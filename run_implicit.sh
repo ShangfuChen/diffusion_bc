@@ -9,7 +9,7 @@ python train_ibc.py \
     --policy-type IMPLICIT \
     --dropout-prob 0.0 \
     --weight-decay 0.0 \
-    --max-epochs 2000 \
+    --max-epochs 8000 \
     --train_batch_size 128 \
     --lr 0.0005 \
     --spatial-reduction SPATIAL_SOFTMAX \

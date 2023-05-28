@@ -4,47 +4,43 @@ method: grid
 
 parameters:
   seed:
-    values: [1, 32, 99]
+    values: [32]
   prefix:
-    value: "bc"
+    value: "diff-policy"
   alg:
-    value: "bc"
+    value: "diff-policy"
   normalize-env:
     value: False
   bc-num-epochs:
-    value: 2000
+    value: 20000
   traj-load-path:
     value: "./ibc/maze2d_100.pt"
-  coeff:
-    values: [0]
-  coeff-bc:
-    values: [1]
   env-name:
     value: "maze2d-medium-v2"
   eval-num-processes:
-    value: 1
+    value: 20
   num-eval:
-    value: 100
+    value: 5
   cuda:
     value: True
   num-render:
-    value: 3
+    value: 0
   vid-fps:
-    value: 60
+    value: 30
   lr:
-    value: 0.0001
+    value: 0.0002
   log-interval:
-    value: 200
+    value: 5000
   save-interval:
-    value: 20000
+    value: 100000
   eval-interval:
-    value: 2000
+    value: 55000
   clip-actions:
     value: True
   hidden-dim:
     value: 256
   depth:
-    value: 2
+    value: 4
   bc-state-norm:
     value: False
   il-in-action-norm:

@@ -1,0 +1,56 @@
+project: "diffusion"
+program: goal_prox/main.py
+method: grid
+name: "ant_ibc_25k_0.002"
+
+parameters:
+  seed:
+    values: [2]
+  prefix:
+    value: "ibc"
+  alg:
+    value: "ibc"
+  traj-load-path:
+    value: "./expert_datasets/ant_25000.pt"
+  env-name:
+    value: "AntGoal-v0"
+  linear-lr-decay:
+    value: True
+  normalize-env:
+    value: False
+  bc-state-norm:
+    value: True
+  il-in-action-norm:
+    value: True
+  il-out-action-norm:
+    value: True
+  bc-num-epochs:
+    value: 15000
+  eval-num-processes:
+    value: 10
+  cuda:
+    value: True
+  num-render:
+    value: 0
+  num-eval:
+    value: 10
+  vid-fps:
+    value: 100
+  lr:
+    values: [0.00001]
+  log-interval:
+    value: 2000
+  save-interval:
+    value: 500000
+  eval-interval:
+    value: 20000
+  ant-noise:
+    values: [0.002]
+  traj-frac:
+    values: [1.0]
+  hidden-dim:
+    value: 1024
+  depth:
+    value: 1
+# export CUDA_VISIBLE_DEVICES=0
+# python goal_prox/main.py --prefix bc --use-proper-time-limits True --alg bc --env-name AntGoal-v0 --normalize-env False --traj-load-path /home/mhhsu/diffusion/expert_datasets/ant_10000.pt --bc-num-epochs 1000 --eval-num-processes 20 --ant-noise 0.2 --traj-frac 0.5 --traj-val-ratio 0.2 --eval-interval 2000 --eval-num-processes 10 --num-eval 10 --log-interval 1000

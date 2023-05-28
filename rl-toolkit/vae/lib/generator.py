@@ -57,12 +57,10 @@ class SimpleVAE(BaseVAE):
         :return: (Tensor) List of latent codes [N x latent_dim]
         """
         result = self.encoder(input)
-
         # Split the result into mu and var components
         # of the latent Gaussian distribution
         mu = self.fc_mu(result)
         log_var = self.fc_var(result)
-
         return [mu, log_var]
 
     def decode(self, z: Tensor) -> Tensor:

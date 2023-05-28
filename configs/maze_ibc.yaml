@@ -6,13 +6,13 @@ parameters:
   seed:
     values: [1, 32, 99]
   prefix:
-    value: "bc"
+    value: "ibc"
   alg:
-    value: "bc"
+    value: "ibc"
   normalize-env:
     value: False
   bc-num-epochs:
-    value: 2000
+    value: 10000
   traj-load-path:
     value: "./ibc/maze2d_100.pt"
   coeff:
@@ -22,29 +22,29 @@ parameters:
   env-name:
     value: "maze2d-medium-v2"
   eval-num-processes:
-    value: 1
-  num-eval:
-    value: 100
+    value: 10
   cuda:
     value: True
+  num-eval:
+    value: 10
   num-render:
-    value: 3
+    value: 0
   vid-fps:
     value: 60
   lr:
     value: 0.0001
   log-interval:
-    value: 200
+    value: 1000
   save-interval:
-    value: 20000
+    value: 500000
   eval-interval:
-    value: 2000
+    value: 15000
   clip-actions:
     value: True
   hidden-dim:
-    value: 256
+    value: 1024
   depth:
-    value: 2
+    value: 1
   bc-state-norm:
     value: False
   il-in-action-norm:

@@ -48,7 +48,7 @@ class Eng_bc(BaseILAlgo):
         self.coeff_bc = args.coeff_bc
         num_steps = 100
         input_dim = 8
-        hidden_dim = 256
+        hidden_dim = 128
         depth = 4
         model_config = models.MLPConfig(
             input_dim = input_dim,

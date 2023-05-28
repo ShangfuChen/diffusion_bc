@@ -117,10 +117,6 @@ class BehavioralCloning(BaseILAlgo):
                 0
             ]
             log_dict["_pr_acc"] = acc.item()
-        #print("")
-        #print("pred_action:", pred_actions.size())
-        #print("true_actions:", true_actions.size())
-        #print("")
         loss = autils.compute_ac_loss(
             pred_actions,
             true_actions.view(-1, self.action_dim),

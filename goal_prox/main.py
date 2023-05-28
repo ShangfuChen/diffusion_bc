@@ -10,7 +10,7 @@ import numpy as np
 from rlf import run_policy, evaluate_policy
 from rlf.algos import (GAIL, DDPG, PPO, BaseAlgo, BehavioralCloning, Diff_bc, 
                        DiffPolicy, Ae_bc, BehavioralCloningFromObs, 
-                       BehavioralCloningPretrain, Eng_bc,
+                       BehavioralCloningPretrain, Eng_bc, GANBC,
                        GailDiscrim, IBC)
 from rlf.algos.il.base_il import BaseILAlgo
 from rlf.algos.il.gaifo import GAIFO
@@ -120,10 +120,9 @@ def get_diffusion_policy(env_name, args, is_stoch):
             n_steps = 100,
             action_dim=action_dim, 
             state_dim=state_dim,
-            num_units=1100,
+            num_units=args.hidden_dim,
+            depth=args.depth,
             is_stoch=is_stoch,
-            # get_base_net_fn=lambda i_shape: MLPBasic(
-                # i_shape[0], hidden_size=1024, num_layers=4
             )
     if env_name[:9] == 'FetchPick':
         state_dim = 16
@@ -143,7 +142,19 @@ def get_diffusion_policy(env_name, args, is_stoch):
             n_steps = 100,
             action_dim=action_dim, 
             state_dim=state_dim,
-            num_units=2100,
+            num_units=args.hidden_dim,
+            depth=args.depth,
+            is_stoch=is_stoch,
+            )
+    if env_name[:4] == 'maze':
+        state_dim = 6
+        action_dim = 2
+        return fetch_policy.MLPDiffusion(
+            n_steps = 100,
+            action_dim=action_dim, 
+            state_dim=state_dim,
+            num_units=args.hidden_dim,
+            depth=args.depth,
             is_stoch=is_stoch,
             )
     if env_name[:6] == 'Walker':
@@ -176,6 +187,12 @@ def get_ibc_policy(env_name, args, is_stoch):
     if env_name[:6] == 'Walker':
         state_dim = 17
         action_dim = 6
+    if env_name[:4] == 'maze':
+        state_dim = 6
+        action_dim = 2
+    if env_name[:3] == 'Ant':
+        state_dim = 42
+        action_dim = 8
     input_dim = state_dim + action_dim
     
     mlp_config = models.MLPConfig(
@@ -225,6 +242,7 @@ def get_setup_dict():
         "bc": (BehavioralCloning(), partial(get_basic_policy, is_stoch=False)),
         "ibc": (IBC(), partial(get_ibc_policy, is_stoch=False)),
         "eng-bc": (Eng_bc(), partial(get_basic_policy, is_stoch=False)),
+        "gan-bc": (GANBC(), partial(get_basic_policy, is_stoch=False)),
         "diff-bc": (Diff_bc(), partial(get_basic_policy, is_stoch=False)),
         "diff-policy": (DiffPolicy(), partial(get_diffusion_policy, is_stoch=False)),
         "ae-bc": (Ae_bc(), partial(get_basic_policy, is_stoch=False)),
