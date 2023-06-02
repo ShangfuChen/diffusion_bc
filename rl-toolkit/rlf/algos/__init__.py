@@ -10,7 +10,7 @@ from rlf.algos.il.gail import GAIL
 from rlf.algos.il.gaifo import GAIFO
 from rlf.algos.il.gail import GailDiscrim
 from rlf.algos.il.bc import BehavioralCloning
-from rlf.algos.il.diff_bc import Diff_bc
+from rlf.algos.il.diff_bc import DBC
 from rlf.algos.il.diff_policy import DiffPolicy
 from rlf.algos.il.ibc import IBC
 from rlf.algos.il.ae_bc import Ae_bc

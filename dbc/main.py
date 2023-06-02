@@ -8,10 +8,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 from rlf import run_policy, evaluate_policy
-from rlf.algos import (GAIL, DDPG, PPO, BaseAlgo, BehavioralCloning, Diff_bc, 
-                       DiffPolicy, Ae_bc, BehavioralCloningFromObs,
-                       BehavioralCloningPretrain, Eng_bc, GANBC,
-                       GailDiscrim, IBC)
+from rlf.algos import (PPO, BaseAlgo, BehavioralCloning, DBC, 
+                       DiffPolicy, Ae_bc, Eng_bc, GANBC, IBC)
 from rlf.algos.il.base_il import BaseILAlgo
 from rlf.algos.il.gaifo import GAIFO
 from rlf.algos.il.sqil import SQIL
@@ -227,41 +225,41 @@ def get_deep_basic_policy(env_name, args):
 
 def get_setup_dict():
     return {
-        "gail": (GAIL(), get_ppo_policy),
-        "gail-deep": (GAIL(), get_deep_ppo_policy),
-        "ddpg": (DDPG(), get_deep_ddpg_policy),
-        "uncert-gail-deep": (UncertGAIL(), get_deep_ppo_policy),
-        "uncert-gail": (UncertGAIL(), get_ppo_policy),
-        "gaifo": (GAIFO(), get_ppo_policy),
-        "gaifo-deep": (GAIFO(), get_deep_ppo_policy),
+        # "gail": (GAIL(), get_ppo_policy),
+        # "gail-deep": (GAIL(), get_deep_ppo_policy),
+        # "ddpg": (DDPG(), get_deep_ddpg_policy),
+        # "uncert-gail-deep": (UncertGAIL(), get_deep_ppo_policy),
+        # "uncert-gail": (UncertGAIL(), get_ppo_policy),
+        # "gaifo": (GAIFO(), get_ppo_policy),
+        # "gaifo-deep": (GAIFO(), get_deep_ppo_policy),
         "ppo": (PPO(), get_ppo_policy),
-        "ppo-deep": (PPO(), get_deep_ppo_policy),
-        "gw-exp": (BaseAlgo(), lambda env_name, _: GridWorldExpert()),
-        "action-replay": (BaseAlgo(), lambda env_name, _: ActionReplayPolicy()),
-        "rnd": (BaseAlgo(), lambda env_name, _: RandomPolicy()),
+        # "ppo-deep": (PPO(), get_deep_ppo_policy),
+        # "gw-exp": (BaseAlgo(), lambda env_name, _: GridWorldExpert()),
+        # "action-replay": (BaseAlgo(), lambda env_name, _: ActionReplayPolicy()),
+        # "rnd": (BaseAlgo(), lambda env_name, _: RandomPolicy()),
         "bc": (BehavioralCloning(), partial(get_basic_policy, is_stoch=False)),
         "ibc": (IBC(), partial(get_ibc_policy, is_stoch=False)),
         "eng-bc": (Eng_bc(), partial(get_basic_policy, is_stoch=False)),
         "gan-bc": (GANBC(), partial(get_basic_policy, is_stoch=False)),
-        "diff-bc": (Diff_bc(), partial(get_basic_policy, is_stoch=False)),
-        "diff-policy": (DiffPolicy(), partial(get_diffusion_policy, is_stoch=False)),
+        "dbc": (DBC(), partial(get_basic_policy, is_stoch=False)),
+        "dp": (DiffPolicy(), partial(get_diffusion_policy, is_stoch=False)),
         "ae-bc": (Ae_bc(), partial(get_basic_policy, is_stoch=False)),
-        "bco": (BehavioralCloningFromObs(), partial(get_basic_policy, is_stoch=True)),
-        "bc-deep": (BehavioralCloning(), get_deep_basic_policy),
-        "dpf": (DiscountedProxIL(), get_ppo_policy),
-        "dpf-deep": (DiscountedProxIL(), get_deep_ppo_policy),
-        "dpf-deep-im": (
-            DiscountedProxIL(
-                get_pf_base=lambda i_shape: CNNBase(i_shape[0], False, 256),
-            ),
-            get_deep_ppo_policy,
-        ),
-        "prox-deep": (ProxAirl(), get_deep_ppo_policy),
-        "rpf": (RankedProxIL(), get_ppo_policy),
-        "rpf-deep": (RankedProxIL(), get_deep_ppo_policy),
-        "sqil-deep": (SQIL(), get_deep_sac_policy),
+        # "bco": (BehavioralCloningFromObs(), partial(get_basic_policy, is_stoch=True)),
+        # "bc-deep": (BehavioralCloning(), get_deep_basic_policy),
+        # "dpf": (DiscountedProxIL(), get_ppo_policy),
+        # "dpf-deep": (DiscountedProxIL(), get_deep_ppo_policy),
+        # "dpf-deep-im": (
+            # DiscountedProxIL(
+                # get_pf_base=lambda i_shape: CNNBase(i_shape[0], False, 256),
+            # ),
+            # get_deep_ppo_policy,
+        # ),
+        # "prox-deep": (ProxAirl(), get_deep_ppo_policy),
+        # "rpf": (RankedProxIL(), get_ppo_policy),
+        # "rpf-deep": (RankedProxIL(), get_deep_ppo_policy),
+        # "sqil-deep": (SQIL(), get_deep_sac_policy),
         "sac": (SAC(), get_deep_sac_policy),
-        "goal-gail": (GoalGAIL(), get_deep_ddpg_policy),
+        # "goal-gail": (GoalGAIL(), get_deep_ddpg_policy),
     }
 
 

@@ -1,5 +1,5 @@
 project: 'diffusion'
-program: goal_prox/main.py
+program: dbc/main.py
 method: grid
 
 parameters:
