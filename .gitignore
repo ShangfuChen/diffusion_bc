@@ -3,6 +3,7 @@
 /expert_datasets
 /rl-toolkit/dm
 /experiments
+/configs_backup
 *.pyc
 *.mp4
 *.png

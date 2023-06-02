@@ -67,7 +67,7 @@ def make_dataloaders(
         seed=train_config.seed,
     )
     # train_dataset = dataset.CoordinateRegression(train_dataset_config)
-    train_dataset = TrajDataset('./ibc/maze2d_100.pt')
+    train_dataset = TrajDataset('./expert_datasets/maze2d_100.pt')
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,

@@ -1,0 +1,53 @@
+project: 'diffusion'
+program: goal_prox/main.py
+method: grid
+
+parameters:
+  seed:
+    values: [1, 32, 99]
+  prefix:
+    value: "ibc"
+  alg:
+    value: "ibc"
+  normalize-env:
+    value: False
+  bc-num-epochs:
+    value: 10000
+  traj-load-path:
+    value: "./expert_datasets/maze2d_100.pt"
+  coeff:
+    values: [0]
+  coeff-bc:
+    values: [1]
+  env-name:
+    value: "maze2d-medium-v2"
+  eval-num-processes:
+    value: 10
+  cuda:
+    value: True
+  num-eval:
+    value: 10
+  num-render:
+    value: 0
+  vid-fps:
+    value: 60
+  lr:
+    value: 0.0001
+  log-interval:
+    value: 1000
+  save-interval:
+    value: 500000
+  eval-interval:
+    value: 15000
+  clip-actions:
+    value: True
+  hidden-dim:
+    value: 1024
+  depth:
+    value: 1
+  bc-state-norm:
+    value: False
+  il-in-action-norm:
+    value: False
+  il-out-action-norm:
+    value: False
