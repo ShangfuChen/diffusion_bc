@@ -26,8 +26,7 @@ from rlf.rl.loggers.wb_logger import (WbLogger, get_wb_ray_config,
                                       get_wb_ray_kwargs)
 from rlf.rl.model import CNNBase, MLPBase, MLPBasic, TwoLayerMlpWithAction
 from rlf.run_settings import RunSettings
-import dm.fetch_policy as fetch_policy
-import dm.hand_policy as hand_policy
+import dm.policy_model as policy_model
 from ibc import dataset, models, optimizers, trainer, utils
 from ibc.trainer import ImplicitTrainState
 from ibc.experiment import Experiment
@@ -112,7 +111,7 @@ def get_diffusion_policy(env_name, args, is_stoch):
     if env_name[:9] == 'FetchPush':
         state_dim = 16
         action_dim = 3
-        return fetch_policy.MLPDiffusion(
+        return policy_model.MLPDiffusion(
             n_steps = 100,
             action_dim=action_dim, 
             state_dim=state_dim,
@@ -123,7 +122,7 @@ def get_diffusion_policy(env_name, args, is_stoch):
     if env_name[:9] == 'FetchPick':
         state_dim = 16
         action_dim = 4
-        return fetch_policy.MLPDiffusion(
+        return policy_model.MLPDiffusion(
             n_steps = 100,
             action_dim=action_dim, 
             state_dim=state_dim,
@@ -134,7 +133,7 @@ def get_diffusion_policy(env_name, args, is_stoch):
     if env_name[:10] == 'CustomHand':
         state_dim = 68
         action_dim = 20
-        return hand_policy.MLPDiffusion(
+        return policy_model.MLPDiffusion(
             n_steps = 100,
             action_dim=action_dim, 
             state_dim=state_dim,
@@ -145,7 +144,7 @@ def get_diffusion_policy(env_name, args, is_stoch):
     if env_name[:4] == 'maze':
         state_dim = 6
         action_dim = 2
-        return fetch_policy.MLPDiffusion(
+        return policy_model.MLPDiffusion(
             n_steps = 100,
             action_dim=action_dim, 
             state_dim=state_dim,
@@ -156,7 +155,7 @@ def get_diffusion_policy(env_name, args, is_stoch):
     if env_name[:6] == 'Walker':
         state_dim = 17
         action_dim = 6
-        return fetch_policy.MLPDiffusion(
+        return policy_model.MLPDiffusion(
             n_steps = 100,
             action_dim=action_dim, 
             state_dim=state_dim,
