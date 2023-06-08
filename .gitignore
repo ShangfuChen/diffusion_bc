@@ -1,9 +1,9 @@
 /data
 /wandb
-/expert_datasets
-/rl-toolkit/dm
 /experiments
+/rl-toolkit/dm_backup
 /configs_backup
+/expert_datasets_backup
 *.pyc
 *.mp4
 *.png

@@ -14,7 +14,7 @@ parameters:
   bc-num-epochs:
     value: 2000
   traj-load-path:
-    value: "./expert_dataset/maze2d_100.pt"
+    value: "./expert_datasets/maze2d_100.pt"
   ddpm-path:
     value: "./rl-toolkit/dm/maze2d_100_1e-3_ddpm.pt"
   coeff:

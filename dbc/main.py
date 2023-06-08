@@ -73,8 +73,6 @@ def get_deep_ppo_policy(env_name, args):
 
 def get_deep_sac_policy(env_name, args):
     return DistActorQ(
-        # get_critic_fn=partial(get_sac_critic, hidden_dim=256),
-        # get_actor_fn=partial(get_sac_actor, hidden_dim=256),
         get_critic_fn=get_sac_critic,
         get_actor_fn=get_sac_actor,
     )
@@ -225,41 +223,18 @@ def get_deep_basic_policy(env_name, args):
 
 def get_setup_dict():
     return {
-        # "gail": (GAIL(), get_ppo_policy),
-        # "gail-deep": (GAIL(), get_deep_ppo_policy),
-        # "ddpg": (DDPG(), get_deep_ddpg_policy),
-        # "uncert-gail-deep": (UncertGAIL(), get_deep_ppo_policy),
-        # "uncert-gail": (UncertGAIL(), get_ppo_policy),
-        # "gaifo": (GAIFO(), get_ppo_policy),
-        # "gaifo-deep": (GAIFO(), get_deep_ppo_policy),
-        "ppo": (PPO(), get_ppo_policy),
-        # "ppo-deep": (PPO(), get_deep_ppo_policy),
-        # "gw-exp": (BaseAlgo(), lambda env_name, _: GridWorldExpert()),
-        # "action-replay": (BaseAlgo(), lambda env_name, _: ActionReplayPolicy()),
-        # "rnd": (BaseAlgo(), lambda env_name, _: RandomPolicy()),
+        # main experiments & baselines
         "bc": (BehavioralCloning(), partial(get_basic_policy, is_stoch=False)),
         "ibc": (IBC(), partial(get_ibc_policy, is_stoch=False)),
+        "dp": (DiffPolicy(), partial(get_diffusion_policy, is_stoch=False)),
+        "dbc": (DBC(), partial(get_basic_policy, is_stoch=False)),
+        # generative model experiments
         "eng-bc": (Eng_bc(), partial(get_basic_policy, is_stoch=False)),
         "gan-bc": (GANBC(), partial(get_basic_policy, is_stoch=False)),
-        "dbc": (DBC(), partial(get_basic_policy, is_stoch=False)),
-        "dp": (DiffPolicy(), partial(get_diffusion_policy, is_stoch=False)),
         "ae-bc": (Ae_bc(), partial(get_basic_policy, is_stoch=False)),
-        # "bco": (BehavioralCloningFromObs(), partial(get_basic_policy, is_stoch=True)),
-        # "bc-deep": (BehavioralCloning(), get_deep_basic_policy),
-        # "dpf": (DiscountedProxIL(), get_ppo_policy),
-        # "dpf-deep": (DiscountedProxIL(), get_deep_ppo_policy),
-        # "dpf-deep-im": (
-            # DiscountedProxIL(
-                # get_pf_base=lambda i_shape: CNNBase(i_shape[0], False, 256),
-            # ),
-            # get_deep_ppo_policy,
-        # ),
-        # "prox-deep": (ProxAirl(), get_deep_ppo_policy),
-        # "rpf": (RankedProxIL(), get_ppo_policy),
-        # "rpf-deep": (RankedProxIL(), get_deep_ppo_policy),
-        # "sqil-deep": (SQIL(), get_deep_sac_policy),
+        # RL policy for collecting expert data
+        "ppo": (PPO(), get_ppo_policy),
         "sac": (SAC(), get_deep_sac_policy),
-        # "goal-gail": (GoalGAIL(), get_deep_ddpg_policy),
     }
 
 
@@ -292,7 +267,6 @@ class GoalProxSettings(RunSettings):
         # Should always be true!
         parser.add_argument("--gw-img", type=str2bool, default=True)
         parser.add_argument("--no-wb", action="store_true", default=False)
-        
         # ibc args
         parser.add_argument("--lr", type=float, default=0.0001)
         parser.add_argument("--hidden-dim", type=int, default=256)
