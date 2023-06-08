@@ -1,7 +1,7 @@
 import numpy as np
-from goal_prox.method.goal_traj_dataset import GoalTrajDataset
 import torch
-from goal_prox.envs.gw_helper import *
+from dbc.method.goal_traj_dataset import GoalTrajDataset
+from dbc.envs.gw_helper import *
 
 def exp_discounted(T, t, delta):
     return np.power(delta, T - t)

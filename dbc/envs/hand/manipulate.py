@@ -4,7 +4,7 @@ import numpy as np
 from gym import utils, error
 from gym.envs.robotics import rotations
 from gym.envs.robotics.utils import robot_get_obs
-from goal_prox.envs import hand_env
+from dbc.envs import hand_env
 
 try:
     import mujoco_py

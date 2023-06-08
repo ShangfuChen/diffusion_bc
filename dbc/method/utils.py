@@ -5,8 +5,8 @@ from PIL import Image
 import wandb
 from collections import defaultdict
 import os.path as osp
-from goal_prox.envs.gw_helper import GwProxPlotter
-from goal_prox.envs.debug_viz import DebugViz, LineDebugViz
+from dbc.envs.gw_helper import GwProxPlotter
+from dbc.envs.debug_viz import DebugViz, LineDebugViz
 import rlf.rl.utils as rutils
 import torch
 

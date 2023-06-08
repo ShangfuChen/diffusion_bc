@@ -1,12 +1,12 @@
 import os
 from gym import utils
 #from gym.envs.robotics import fetch_env
-from goal_prox.envs.viz.base_fetch import FetchEnv
+from dbc.envs.viz.base_fetch import FetchEnv
 
 
 # Ensure we get the path separator correct on windows
 #MODEL_XML_PATH = os.path.join('fetch', 'push.xml')
-MODEL_XML_PATH = '/home/aszot/p-goal-prox/goal_prox/envs/viz/viz_push.xml'
+MODEL_XML_PATH = '/home/aszot/p-goal-prox/dbc/envs/viz/viz_push.xml'
 
 
 class VizFetchPushEnv(FetchEnv, utils.EzPickle):

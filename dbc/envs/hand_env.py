@@ -5,7 +5,7 @@ import numpy as np
 import gym
 from gym import error, spaces
 from gym.utils import seeding
-from goal_prox.envs import robot_env
+from dbc.envs import robot_env
 
 
 class HandEnv(robot_env.RobotEnv):

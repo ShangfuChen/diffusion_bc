@@ -1,10 +1,10 @@
 from rlf.algos.nested_algo import NestedAlgo
 from rlf.algos.on_policy.ppo import PPO
-from goal_prox.method.prox_func import ProxFunc
+from dbc.method.prox_func import ProxFunc
+from dbc.method.goal_traj_dataset import GoalTrajDataset
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-from goal_prox.method.goal_traj_dataset import GoalTrajDataset
 import torch
 import numpy as np
 

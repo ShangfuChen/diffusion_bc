@@ -5,22 +5,22 @@ from rlf.exp_mgr.viz_utils import save_mp4, save_agent_obs
 import gym
 import numpy as np
 from functools import partial
-from goal_prox.envs.goal_traj_saver import GoalTrajSaver
+from dbc.envs.goal_traj_saver import GoalTrajSaver
 import os.path as osp
 import uuid
 from tqdm import tqdm
 import argparse
 import torch
-from goal_prox.envs.goal_check import BlockGripperActionWrapper
+from dbc.envs.goal_check import BlockGripperActionWrapper
 from rlf.args import str2bool
-from goal_prox.envs.goal_check import EasyObsFetchWrapper, SingleFrameStack
+from dbc.envs.goal_check import EasyObsFetchWrapper, SingleFrameStack
 from rlf.envs.image_obs_env import ImageObsWrapper
 from rlf.baselines.common.atari_wrappers import WarpFrame
 from rlf.rl.envs import TransposeImage
 import rlf.rl.utils as rutils
 
-import goal_prox.envs.fetch
-import goal_prox.envs.viz
+import dbc.envs.fetch
+import dbc.envs.viz
 
 def get_state(obs):
     if 'state' in obs:

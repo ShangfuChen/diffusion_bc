@@ -1,7 +1,7 @@
 from rlf.envs.env_interface import EnvInterface, register_env_interface
 import gym
-from goal_prox.gym_minigrid.wrappers import *
-from goal_prox.envs.gw_helper import *
+from dbc.gym_minigrid.wrappers import *
+from dbc.envs.gw_helper import *
 from rlf.args import str2bool
 
 

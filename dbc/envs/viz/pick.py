@@ -5,7 +5,7 @@ from gym.envs.robotics import fetch_env
 
 # Ensure we get the path separator correct on windows
 #MODEL_XML_PATH = os.path.join('fetch', 'pick_and_place.xml')
-MODEL_XML_PATH = '/home/sfchen/diffusion/goal_prox/envs/viz/viz_pick_and_place.xml'
+MODEL_XML_PATH = '/home/sfchen/diffusion/dbc/envs/viz/viz_pick_and_place.xml'
 
 
 class VizFetchPickAndPlaceEnv(fetch_env.FetchEnv, utils.EzPickle):

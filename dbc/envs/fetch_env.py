@@ -1,6 +1,6 @@
 import numpy as np
 
-from goal_prox.envs import robot_env
+from dbc.envs import robot_env
 from gym.envs.robotics import rotations, utils
 
 

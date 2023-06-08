@@ -1,8 +1,8 @@
 from gym.envs.robotics.fetch.pick_and_place import FetchPickAndPlaceEnv
-from goal_prox.envs.viz.pick import VizFetchPickAndPlaceEnv
+from dbc.envs.viz.pick import VizFetchPickAndPlaceEnv
 import numpy as np
-from goal_prox.envs.holdout_sampler import HoldoutSampler
-from goal_prox.envs.old_holdout_sampler import OldHoldoutSampler
+from dbc.envs.holdout_sampler import HoldoutSampler
+from dbc.envs.old_holdout_sampler import OldHoldoutSampler
 
 class FetchPickAndPlaceCustom(FetchPickAndPlaceEnv):
     def __init__(self, reward_type='sparse'):

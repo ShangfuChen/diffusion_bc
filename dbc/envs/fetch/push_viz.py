@@ -4,17 +4,17 @@ from rlf.rl.utils import save_mp4
 import gym
 import numpy as np
 from functools import partial
-from goal_prox.envs.goal_traj_saver import GoalTrajSaver
+from dbc.envs.goal_traj_saver import GoalTrajSaver
 import os.path as osp
 import uuid
 from tqdm import tqdm
 import argparse
 import torch
-from goal_prox.envs.goal_check import BlockGripperActionWrapper
+from dbc.envs.goal_check import BlockGripperActionWrapper
 from rlf.args import str2bool
-from goal_prox.envs.goal_check import EasyObsFetchWrapper
+from dbc.envs.goal_check import EasyObsFetchWrapper
 
-import goal_prox.envs.fetch
+import dbc.envs.fetch
 
 
 def goToGoal(env, obs):

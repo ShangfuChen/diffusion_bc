@@ -1,7 +1,6 @@
 import numpy as np
 import torch
-
-from goal_prox.method.goal_traj_dataset import GoalTrajDataset
+from dbc.method.goal_traj_dataset import GoalTrajDataset
 
 
 class GoalGAILTrajDataset(GoalTrajDataset):

@@ -1,9 +1,9 @@
+import numpy as np
 from rlf.policies import SolvePolicy
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
-from goal_prox.gym_minigrid.minigrid import MiniGridEnv
-import numpy as np
-from goal_prox.envs.gw_helper import convert_to_graph
+from dbc.gym_minigrid.minigrid import MiniGridEnv
+from dbc.envs.gw_helper import convert_to_graph
 
 def pretty_print_graph(graph, agent_pos, goal_pos):
     for j in range(graph.shape[1]):

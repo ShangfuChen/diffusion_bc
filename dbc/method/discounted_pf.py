@@ -3,8 +3,8 @@ from functools import partial
 import rlf.rl.utils as rutils
 import torch
 import torch.nn.functional as F
-from goal_prox.method.prox_func import ProxFunc
-from goal_prox.method.value_traj_dataset import *
+from dbc.method.prox_func import ProxFunc
+from dbc.method.value_traj_dataset import *
 from rlf.algos.nested_algo import NestedAlgo
 from rlf.algos.on_policy.ppo import PPO
 

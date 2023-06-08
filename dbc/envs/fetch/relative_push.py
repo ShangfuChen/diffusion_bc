@@ -1,9 +1,9 @@
 import os
 from gym import utils
 import numpy as np
-from goal_prox.envs import fetch_env
-from goal_prox.envs.holdout_sampler import HoldoutSampler, LineHoldoutSampler
-from goal_prox.envs.old_holdout_sampler import OldHoldoutSampler
+from dbc.envs import fetch_env
+from dbc.envs.holdout_sampler import HoldoutSampler, LineHoldoutSampler
+from dbc.envs.old_holdout_sampler import OldHoldoutSampler
 
 
 # Ensure we get the path separator correct on windows

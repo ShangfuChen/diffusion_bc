@@ -2,8 +2,8 @@ import torch
 
 from rlf.algos.il.gaifo import GaifoDiscrim
 from rlf.algos.nested_algo import NestedAlgo
-from goal_prox.method.goal_gail_algo import GoalGAILAlgo
-from goal_prox.method.goal_gail_dataset import GoalGAILTrajDataset
+from dbc.method.goal_gail_algo import GoalGAILAlgo
+from dbc.method.goal_gail_dataset import GoalGAILTrajDataset
 
 
 class GoalGAIL(NestedAlgo):

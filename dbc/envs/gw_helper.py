@@ -9,7 +9,7 @@ from PIL import Image
 from collections import defaultdict
 
 from gym_minigrid.wrappers import *
-from goal_prox.envs.debug_viz import DebugViz
+from dbc.envs.debug_viz import DebugViz
 import rlf.rl.utils as rutils
 import random
 

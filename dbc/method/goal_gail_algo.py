@@ -6,7 +6,7 @@ import rlf.rl.utils as rutils
 from rlf.algos.off_policy.sac import SAC
 from rlf.algos.off_policy.ddpg import DDPG
 
-from goal_prox.method.goal_gail_storage import GoalGAILStorage
+from dbc.method.goal_gail_storage import GoalGAILStorage
 import numpy as np
 
 

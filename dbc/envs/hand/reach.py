@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 from gym import utils
-from goal_prox.envs import hand_env
+from dbc.envs import hand_env
 from gym.envs.robotics.utils import robot_get_obs
 
 

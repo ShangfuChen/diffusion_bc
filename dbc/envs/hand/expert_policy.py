@@ -14,7 +14,7 @@ from rlf.rl.model import MLPBase, TwoLayerMlpWithAction
 import torch.nn as nn
 import torch.nn.functional as F
 from rlf.args import str2bool
-import goal_prox.envs.hand
+import dbc.envs.hand
 from rlf import PPO
 from rlf.envs.env_interface import register_env_interface
 from rlf.algos.off_policy.her import create_her_storage_buff

@@ -23,7 +23,7 @@ import dm.ddpm_toy as ddpm_toy
 # import dm.ddpm_hand_norm as ddpm_hand
 import math
 
-class Diff_bc(BaseILAlgo):
+class DBC(BaseILAlgo):
     """
     When used as a standalone updater, BC will perform a single update per call
     to update. The total number of udpates is # epochs * # batches in expert

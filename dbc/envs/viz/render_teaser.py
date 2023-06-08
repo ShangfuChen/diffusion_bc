@@ -1,7 +1,7 @@
 import sys
 sys.path.insert(0, './')
 import gym
-import goal_prox.envs.viz
+import dbc.envs.viz
 from PIL import Image
 
 

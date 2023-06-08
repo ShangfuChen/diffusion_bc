@@ -10,9 +10,9 @@ from rlf.il.traj_mgr import TrajSaver
 import torch
 import os.path as osp
 from tqdm import tqdm
-from goal_prox.envs.goal_traj_saver import GoalTrajSaver
+from dbc.envs.goal_traj_saver import GoalTrajSaver
 import torch.optim as optim
-import goal_prox.envs.fetch
+import dbc.envs.fetch
 import uuid
 from rlf.rl.model import def_mlp_weight_init
 import torch.nn as nn
@@ -20,7 +20,7 @@ import torch.nn.functional as F
 from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
 import rlf.rl.utils as rutils
 import matplotlib.pyplot as plt
-from goal_prox.envs.goal_check import EasyObsFetchWrapper
+from dbc.envs.goal_check import EasyObsFetchWrapper
 
 
 

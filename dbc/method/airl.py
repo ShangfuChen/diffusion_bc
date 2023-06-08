@@ -1,4 +1,5 @@
-from goal_prox.method.value_traj_dataset import *
+import dbc.method.utils as mutils
+from dbc.method.value_traj_dataset import *
 from rlf.algos.il.gail import GailDiscrim
 import torch.nn.functional as F
 import torch
@@ -9,7 +10,6 @@ from functools import partial
 from rlf.comps.ensemble import Ensemble
 from rlf.args import str2bool
 import rlf.il.utils as iutils
-import goal_prox.method.utils as mutils
 from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
 from collections import deque, defaultdict
 from rlf.policies.base_policy import get_step_info

@@ -21,7 +21,7 @@ from functools import partial
 import itertools
 
 import rlf.rl.utils as rutils
-import goal_prox.method.utils as mutils
+import dbc.method.utils as mutils
 import rlf.il.utils as iutils
 from abc import ABC, abstractmethod
 from rlf.rl.loggers import sanity_checker

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0, './')
-import goal_prox.envs.hand
+import dbc.envs.hand
 import gym
 from PIL import Image
 

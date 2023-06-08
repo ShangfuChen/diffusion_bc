@@ -4,7 +4,7 @@ method: grid
 
 parameters:
   seed:
-    values: [1, 32, 99]
+    values: [1, 2, 3]
   prefix:
     value: "bc"
   alg:
@@ -14,7 +14,7 @@ parameters:
   bc-num-epochs:
     value: 2000
   traj-load-path:
-    value: "./ibc/maze2d_100.pt"
+    value: "./expert_datasets/maze2d_100.pt"
   coeff:
     values: [0]
   coeff-bc:

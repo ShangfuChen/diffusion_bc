@@ -27,22 +27,22 @@ from rlf.rl.loggers.wb_logger import (WbLogger, get_wb_ray_config,
 from rlf.rl.model import CNNBase, MLPBase, MLPBasic, TwoLayerMlpWithAction
 from rlf.run_settings import RunSettings
 
-import goal_prox.envs.ball_in_cup
-import goal_prox.envs.d4rl
-import goal_prox.envs.fetch
-import goal_prox.envs.goal_check
-import goal_prox.envs.gridworld
-import goal_prox.envs.hand
-import goal_prox.gym_minigrid
-from goal_prox.envs.goal_traj_saver import GoalTrajSaver
-from goal_prox.method.airl import ProxAirl
-from goal_prox.method.discounted_pf import DiscountedProxFunc, DiscountedProxIL
-from goal_prox.method.goal_gail_discriminator import GoalGAIL
-from goal_prox.method.ranked_pf import RankedProxIL
-from goal_prox.method.uncert_discrim import UncertGAIL
-from goal_prox.method.utils import trim_episodes_trans
-from goal_prox.models import GwImgEncoder
-from goal_prox.policies.grid_world_expert import GridWorldExpert
+import dbc.envs.ball_in_cup
+import dbc.envs.d4rl
+import dbc.envs.fetch
+import dbc.envs.goal_check
+import dbc.envs.gridworld
+import dbc.envs.hand
+import dbc.gym_minigrid
+from dbc.envs.goal_traj_saver import GoalTrajSaver
+from dbc.method.airl import ProxAirl
+from dbc.method.discounted_pf import DiscountedProxFunc, DiscountedProxIL
+from dbc.method.goal_gail_discriminator import GoalGAIL
+from dbc.method.ranked_pf import RankedProxIL
+from dbc.method.uncert_discrim import UncertGAIL
+from dbc.method.utils import trim_episodes_trans
+from dbc.models import GwImgEncoder
+from dbc.policies.grid_world_expert import GridWorldExpert
 
 import time
 
@@ -175,8 +175,8 @@ class GoalProxSettings(RunSettings):
         parser.add_argument("--no-wb", action="store_true", default=False)
 
     def import_add(self):
-        import goal_prox.envs.fetch
-        import goal_prox.envs.goal_check
+        import dbc.envs.fetch
+        import dbc.envs.goal_check
 
     def get_add_ray_config(self, config):
         if self.base_args.no_wb:

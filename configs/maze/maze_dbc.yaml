@@ -4,7 +4,7 @@ method: grid
 
 parameters:
   seed:
-    values: [1, 32, 99]
+    values: [1, 2, 3]
   prefix:
     value: "dbc"
   alg:
