@@ -1,19 +1,13 @@
-#matplotlib inline
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.datasets import make_s_curve
 import torch
 import torch.nn as nn
-import cv2
 import os, sys
 import argparse
 import numpy as np
-import scipy.stats
-from geomloss import SamplesLoss
 import gym
 import d4rl # Import required to register environments
 from torch.utils.data import Dataset, DataLoader
-from torch.utils.data.sampler import Sampler, SequentialSampler, BatchSampler
 from tqdm import tqdm
 
 
@@ -188,7 +182,7 @@ if __name__ == '__main__':
                          input_dim=dataset.shape[1],
                          num_units=args.hidden_dim,
                          depth=args.depth).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=3e-5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=2e-4)
     train_loss_list = []
     for t in tqdm(range(0, num_epoch)):
         total_loss = 0
